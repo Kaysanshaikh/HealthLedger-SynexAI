@@ -1,0 +1,255 @@
+-- HealthLedger Federated Learning Local Database Setup
+-- Run this to create a fresh local database for FL development
+
+-- Drop existing database if it exists (for clean start)
+DROP DATABASE IF EXISTS healthledger_fl_local;
+
+-- Create new database
+CREATE DATABASE healthledger_fl_local;
+
+-- Connect to the new database
+\c healthledger_fl_local;
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================
+-- EXISTING HEALTHLEDGER TABLES (Simplified)
+-- ============================================
+
+-- Users table
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    wallet_address VARCHAR(42) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('patient', 'doctor', 'diagnostic', 'admin')),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Patients table
+CREATE TABLE patients (
+    patient_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    wallet_address VARCHAR(42) UNIQUE NOT NULL,
+    hh_number BIGINT UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    dob BIGINT NOT NULL,
+    gender VARCHAR(20),
+    blood_group VARCHAR(5),
+    home_address TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Doctors table
+CREATE TABLE doctors (
+    doctor_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    wallet_address VARCHAR(42) UNIQUE NOT NULL,
+    hh_number BIGINT UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    specialization VARCHAR(100),
+    hospital VARCHAR(255),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Diagnostic centers table
+CREATE TABLE diagnostic_centers (
+    diagnostic_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    wallet_address VARCHAR(42) UNIQUE NOT NULL,
+    hh_number BIGINT UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    location TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Health records table
+CREATE TABLE health_records (
+    record_id VARCHAR(66) PRIMARY KEY,
+    patient_address VARCHAR(42) NOT NULL,
+    created_by_address VARCHAR(42) NOT NULL,
+    ipfs_cid VARCHAR(100) NOT NULL,
+    metadata TEXT,
+    blockchain_tx_hash VARCHAR(66),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================
+-- FEDERATED LEARNING TABLES
+-- ============================================
+
+-- FL Models registry
+CREATE TABLE fl_models (
+    model_id VARCHAR(66) PRIMARY KEY,
+    disease VARCHAR(50) NOT NULL CHECK (disease IN ('diabetes', 'cvd', 'cancer', 'pneumonia')),
+    model_type VARCHAR(50) NOT NULL, -- 'logistic_regression', 'neural_network', 'cnn'
+    current_round INTEGER DEFAULT 0,
+    global_model_ipfs VARCHAR(100),
+    accuracy DECIMAL(5,4),
+    loss DECIMAL(10,6),
+    total_participants INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed')),
+    created_by VARCHAR(42) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- FL Participants (hospitals/diagnostic centers enrolled in FL)
+CREATE TABLE fl_participants (
+    participant_id SERIAL PRIMARY KEY,
+    wallet_address VARCHAR(42) UNIQUE NOT NULL,
+    institution_name VARCHAR(255) NOT NULL,
+    institution_type VARCHAR(20) CHECK (institution_type IN ('hospital', 'diagnostic_center')),
+    total_contributions INTEGER DEFAULT 0,
+    total_rewards DECIMAL(18,8) DEFAULT 0,
+    reputation_score DECIMAL(5,2) DEFAULT 100.00,
+    is_active BOOLEAN DEFAULT TRUE,
+    registered_at TIMESTAMP DEFAULT NOW()
+);
+
+-- FL Rounds tracking
+CREATE TABLE fl_rounds (
+    round_id SERIAL PRIMARY KEY,
+    model_id VARCHAR(66) REFERENCES fl_models(model_id) ON DELETE CASCADE,
+    round_number INTEGER NOT NULL,
+    status VARCHAR(20) DEFAULT 'initiated' CHECK (status IN ('initiated', 'training', 'aggregating', 'completed', 'failed')),
+    min_participants INTEGER DEFAULT 2,
+    current_participants INTEGER DEFAULT 0,
+    aggregated_model_ipfs VARCHAR(100),
+    aggregation_method VARCHAR(50) DEFAULT 'fedavg',
+    start_time TIMESTAMP DEFAULT NOW(),
+    end_time TIMESTAMP,
+    timeout_at TIMESTAMP,
+    UNIQUE(model_id, round_number)
+);
+
+-- Model contributions from participants
+CREATE TABLE fl_contributions (
+    contribution_id SERIAL PRIMARY KEY,
+    round_id INTEGER REFERENCES fl_rounds(round_id) ON DELETE CASCADE,
+    participant_address VARCHAR(42) NOT NULL,
+    model_update_ipfs VARCHAR(100) NOT NULL,
+    zk_proof_hash VARCHAR(66),
+    zk_proof_verified BOOLEAN DEFAULT FALSE,
+    local_accuracy DECIMAL(5,4),
+    local_loss DECIMAL(10,6),
+    samples_trained INTEGER,
+    training_time INTEGER, -- seconds
+    gas_used BIGINT,
+    blockchain_tx_hash VARCHAR(66),
+    submitted_at TIMESTAMP DEFAULT NOW(),
+    verified_at TIMESTAMP
+);
+
+-- Training metrics per round
+CREATE TABLE fl_metrics (
+    metric_id SERIAL PRIMARY KEY,
+    round_id INTEGER REFERENCES fl_rounds(round_id) ON DELETE CASCADE,
+    participant_address VARCHAR(42),
+    metric_type VARCHAR(50) NOT NULL, -- 'accuracy', 'loss', 'precision', 'recall', 'f1_score'
+    metric_value DECIMAL(10,6) NOT NULL,
+    dataset_split VARCHAR(20), -- 'train', 'validation', 'test'
+    recorded_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Byzantine attack detection logs
+CREATE TABLE fl_security_logs (
+    log_id SERIAL PRIMARY KEY,
+    round_id INTEGER REFERENCES fl_rounds(round_id) ON DELETE CASCADE,
+    participant_address VARCHAR(42) NOT NULL,
+    attack_type VARCHAR(50), -- 'poisoned_model', 'invalid_proof', 'anomalous_update'
+    severity VARCHAR(20) CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+    detected_at TIMESTAMP DEFAULT NOW(),
+    action_taken TEXT,
+    resolved BOOLEAN DEFAULT FALSE
+);
+
+-- ZK Proof verification cache
+CREATE TABLE zk_proof_cache (
+    proof_id SERIAL PRIMARY KEY,
+    proof_hash VARCHAR(66) UNIQUE NOT NULL,
+    public_inputs JSONB,
+    verification_result BOOLEAN NOT NULL,
+    verified_at TIMESTAMP DEFAULT NOW(),
+    gas_cost BIGINT
+);
+
+-- Rewards and incentives
+CREATE TABLE fl_rewards (
+    reward_id SERIAL PRIMARY KEY,
+    contribution_id INTEGER REFERENCES fl_contributions(contribution_id) ON DELETE CASCADE,
+    participant_address VARCHAR(42) NOT NULL,
+    reward_amount DECIMAL(18,8) NOT NULL,
+    reward_type VARCHAR(50), -- 'contribution', 'accuracy_bonus', 'early_submission'
+    blockchain_tx_hash VARCHAR(66),
+    distributed_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================
+-- INDEXES FOR PERFORMANCE
+-- ============================================
+
+CREATE INDEX idx_fl_models_disease ON fl_models(disease);
+CREATE INDEX idx_fl_models_status ON fl_models(status);
+CREATE INDEX idx_fl_rounds_model_id ON fl_rounds(model_id);
+CREATE INDEX idx_fl_rounds_status ON fl_rounds(status);
+CREATE INDEX idx_fl_contributions_round_id ON fl_contributions(round_id);
+CREATE INDEX idx_fl_contributions_participant ON fl_contributions(participant_address);
+CREATE INDEX idx_fl_metrics_round_id ON fl_metrics(round_id);
+CREATE INDEX idx_fl_security_logs_participant ON fl_security_logs(participant_address);
+CREATE INDEX idx_zk_proof_cache_hash ON zk_proof_cache(proof_hash);
+
+-- ============================================
+-- VIEWS FOR COMMON QUERIES
+-- ============================================
+
+-- View: Current model performance
+CREATE VIEW v_model_performance AS
+SELECT 
+    m.model_id,
+    m.disease,
+    m.current_round,
+    m.accuracy,
+    m.loss,
+    m.total_participants,
+    r.status as current_round_status,
+    COUNT(DISTINCT c.participant_address) as active_participants
+FROM fl_models m
+LEFT JOIN fl_rounds r ON m.model_id = r.model_id AND r.round_number = m.current_round
+LEFT JOIN fl_contributions c ON r.round_id = c.round_id
+GROUP BY m.model_id, m.disease, m.current_round, m.accuracy, m.loss, m.total_participants, r.status;
+
+-- View: Participant leaderboard
+CREATE VIEW v_participant_leaderboard AS
+SELECT 
+    p.participant_id,
+    p.wallet_address,
+    p.institution_name,
+    p.total_contributions,
+    p.total_rewards,
+    p.reputation_score,
+    COUNT(DISTINCT c.round_id) as rounds_participated,
+    AVG(c.local_accuracy) as avg_accuracy
+FROM fl_participants p
+LEFT JOIN fl_contributions c ON p.wallet_address = c.participant_address
+GROUP BY p.participant_id, p.wallet_address, p.institution_name, p.total_contributions, p.total_rewards, p.reputation_score
+ORDER BY p.reputation_score DESC, p.total_contributions DESC;
+
+-- ============================================
+-- SAMPLE DATA FOR TESTING
+-- ============================================
+
+-- Insert admin user
+INSERT INTO users (wallet_address, email, password_hash, role) VALUES
+('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', 'admin@healthledger.local', '$2a$10$dummy.hash.for.testing', 'admin');
+
+-- Insert test participants
+INSERT INTO fl_participants (wallet_address, institution_name, institution_type) VALUES
+('0x70997970C51812dc3A010C7d01b50e0d17dc79C8', 'City General Hospital', 'hospital'),
+('0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC', 'Metro Diagnostic Center', 'diagnostic_center'),
+('0x90F79bf6EB2c4f870365E785982E1f101E93b906', 'Regional Medical Center', 'hospital');
+
+COMMENT ON DATABASE healthledger_fl_local IS 'HealthLedger Federated Learning Local Development Database';

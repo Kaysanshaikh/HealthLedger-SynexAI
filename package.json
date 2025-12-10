@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/package",
-  "name": "healthledger-ipfs",
-  "version": "1.0.0",
-  "description": "HealthLedger on Polygon with IPFS integration",
+  "name": "healthledger-federated-learning",
+  "version": "2.0.0",
+  "description": "HealthLedger with Zero-Knowledge Federated Learning on Polygon",
   "main": "server.js",
   "scripts": {
     "clean": "hardhat clean",
@@ -21,24 +21,32 @@
     "start:api": "node server.js",
     "dev:api": "nodemon server.js",
     "db:init": "node database/init.js",
+    "db:init:fl": "psql -U postgres -f database/init_fl_local.sql",
     "db:test": "node database/testConnection.js",
     "db:test-full": "node database/testDatabase.js",
     "db:view": "node database/viewData.js",
     "db:cleanup": "node database/cleanupTest.js",
     "db:sync": "node database/syncBlockchainToDb.js",
     "test:pinata": "node scripts/testPinata.js",
-    "sync:blockchain": "node scripts/syncBlockchain.js"
+    "sync:blockchain": "node scripts/syncBlockchain.js",
+    "fl:setup": "node scripts/fl/setupCircuits.js",
+    "fl:test": "node scripts/fl/testFLWorkflow.js",
+    "fl:init-model": "node scripts/fl/initializeModel.js"
   },
   "type": "commonjs",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "hardhat": "^2.22.0",
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",
     "axios": "^1.7.2",
     "bcryptjs": "^2.4.3",
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
     "ethers": "^6.10.0",
@@ -47,6 +55,8 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "pg": "^8.16.3",
+    "python-shell": "^5.0.0",
+    "snarkjs": "^0.7.0",
     "uuid": "^9.0.1",
     "web3.storage": "^4.5.5"
   }

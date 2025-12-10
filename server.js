@@ -9,6 +9,7 @@ const recordsRouter = require("./routes/records");
 const registerRouter = require("./routes/register");
 const searchRouter = require("./routes/search");
 const profileRouter = require("./routes/profile");
+const flRouter = require("./routes/federatedLearning");
 
 const app = express();
 
@@ -24,7 +25,7 @@ app.use(express.json());
 
 // ✅ Health check
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", environment: "production", timestamp: Date.now() });
+  res.json({ status: "ok", environment: process.env.NODE_ENV || "development", timestamp: Date.now() });
 });
 
 // ✅ API routes
@@ -34,6 +35,7 @@ app.use("/api/records", recordsRouter);
 app.use("/api/register", registerRouter);
 app.use("/api/search", searchRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/fl", flRouter);
 
 // ✅ Serve React frontend
 const frontendPath = path.join(__dirname, "frontend", "build");
