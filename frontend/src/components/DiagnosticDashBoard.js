@@ -4,8 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import NavBar_Logout from "./NavBar_Logout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { User, FilePlus, FileText } from 'lucide-react';
+import { User, FilePlus, FileText, Brain } from 'lucide-react';
 import client from "../api/client";
+import FLManager from "./FLManager";
 
 const DiagnosticDashBoard = () => {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ const DiagnosticDashBoard = () => {
           <h1 className="text-3xl font-bold tracking-tight">Diagnostic Center Dashboard</h1>
           <p className="text-muted-foreground">Welcome back, {centerName || 'Diagnostic Center'}</p>
         </header>
-        
+
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           <Card className="flex flex-col">
             <CardHeader>
@@ -89,7 +90,10 @@ const DiagnosticDashBoard = () => {
               <Button className="w-full" onClick={() => navigate(`/diagnostic/${hhNumber}/reports`)}>View My Reports</Button>
             </div>
           </Card>
+
         </div>
+
+        <FLManager />
       </div>
     </div>
   );

@@ -31,11 +31,11 @@ function ViewPatientRecords() {
         setLoading(true);
         setError(null);
         setMessage(null);
-        
+
         console.log("📋 Fetching medical records for HH Number:", hhNumber);
         const response = await client.get(`/records/patient/${hhNumber}/all`);
         console.log("✅ Medical records fetched:", response.data);
-        
+
         if (response.data.records && response.data.records.length > 0) {
           setRecords(response.data.records);
         } else {
@@ -44,10 +44,10 @@ function ViewPatientRecords() {
         }
       } catch (err) {
         console.error("❌ Failed to fetch medical records:", err);
-        
+
         // User-friendly error message
         let errorMsg = "Unable to load medical records.";
-        
+
         if (err.response?.data?.error) {
           errorMsg = err.response.data.error;
         } else if (err.message.includes("not found")) {
@@ -55,7 +55,7 @@ function ViewPatientRecords() {
         } else if (err.message.includes("network")) {
           errorMsg = "Network error. Please check your connection and try again.";
         }
-        
+
         setError(errorMsg);
         setRecords([]);
       } finally {
@@ -114,7 +114,7 @@ function ViewPatientRecords() {
                   <dl className="space-y-4">
                     <RecordDetail label="Record ID" value={record.record_id} />
                     <RecordDetail label="Type" value={record.record_type || 'General'} />
-                    
+
                     {/* Test Details */}
                     {record.metadata?.testName && (
                       <RecordDetail label="Test Name" value={record.metadata.testName} />
@@ -138,7 +138,7 @@ function ViewPatientRecords() {
                         </dd>
                       </div>
                     )}
-                    
+
                     {/* File Information */}
                     {record.metadata?.fileName && (
                       <RecordDetail label="Attached File" value={record.metadata.fileName} />
@@ -147,14 +147,14 @@ function ViewPatientRecords() {
                       <RecordDetail label="File Size" value={`${(record.metadata.fileSize / 1024).toFixed(2)} KB`} />
                     )}
                   </dl>
-                  
+
                   {/* Only show View Document button if there's a valid IPFS CID (not placeholder) */}
                   {record.ipfs_cid && record.ipfs_cid !== 'QmPlaceholder' && (
                     <div className="mt-6">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={() => {
-                          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+                          const apiUrl = process.env.REACT_APP_API_URL || '/api';
                           window.open(`${apiUrl}/records/file/${record.ipfs_cid}`, '_blank');
                         }}
                       >
@@ -182,11 +182,11 @@ function ViewPatientRecords() {
             </CardContent>
           </Card>
         )}
-        
+
         {!loading && records.length === 0 && error && (
           <Card>
             <CardContent className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+              <AlertTriangle className="h-12 w-12 mx-auto text-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Unable to Load Records</h3>
               <p className="text-muted-foreground mb-4">
                 {error}

@@ -33,7 +33,7 @@ const PatientRegistration = ({ walletAddress }) => {
   const checkRegistration = async () => {
     try {
       setChecking(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+      const apiUrl = process.env.REACT_APP_API_URL || '/api';
       const response = await fetch(
         `${apiUrl}/profile/check-registration?walletAddress=${walletAddress}`
       );
@@ -105,7 +105,7 @@ const PatientRegistration = ({ walletAddress }) => {
 
     try {
       setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+      const apiUrl = process.env.REACT_APP_API_URL || '/api';
 
       const response = await fetch(`${apiUrl}/register/patient`, {
         method: 'POST',
@@ -122,7 +122,7 @@ const PatientRegistration = ({ walletAddress }) => {
 
       if (response.ok) {
         setSuccessMessage(`✅ Registration successful! Welcome, ${data.profile.name}!`);
-        
+
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {
           window.location.href = '/dashboard';
@@ -195,13 +195,13 @@ const PatientRegistration = ({ walletAddress }) => {
           </div>
 
           <div className="action-buttons">
-            <button 
+            <button
               className="btn btn-primary"
               onClick={() => window.location.href = '/dashboard'}
             >
               Go to Dashboard
             </button>
-            <button 
+            <button
               className="btn btn-secondary"
               onClick={() => window.location.href = `/profile/edit/${userProfile.user.hhNumber}`}
             >
@@ -409,8 +409,8 @@ const PatientRegistration = ({ walletAddress }) => {
             <strong>Wallet Address:</strong> {walletAddress}
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary btn-submit"
             disabled={loading}
           >

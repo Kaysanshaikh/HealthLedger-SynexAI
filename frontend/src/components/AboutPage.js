@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import NavBar from "./NavBar";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Users, Heart, FlaskConical } from 'lucide-react';
+import { Users, Heart, Brain, ShieldCheck } from 'lucide-react';
 
 const SectionCard = ({ icon, title, children, delay = 0 }) => (
   <motion.div
@@ -29,7 +29,7 @@ const AboutUs = () => {
       <NavBar />
       <div className="container mx-auto p-4 md:p-8">
         <header className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">About HealthLedger</h1>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">About HealthLedger AI</h1>
           <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
             Revolutionizing healthcare by putting patients in control of their medical data through secure, decentralized technology.
           </p>
@@ -53,10 +53,26 @@ const AboutUs = () => {
             </ul>
           </SectionCard>
 
-          <SectionCard icon={<FlaskConical className="h-8 w-8 text-primary" />} title="Our Commitment" delay={0.4}>
+          <SectionCard icon={<ShieldCheck className="h-8 w-8 text-primary" />} title="Blockchain & ZK-Proofs" delay={0.4}>
             <p className="text-muted-foreground">
-              We are committed to ensuring the integrity and security of patient data. Our system ensures that only authorized users have access to patient records. Patients have full control over who can access their medical records and can grant or revoke access as needed.
+              We leverage the immutability of the Polygon blockchain paired with the privacy of Zero-Knowledge Proofs. This ensures that every model update is verified for integrity without ever exposing the sensitive health data behind it.
             </p>
+          </SectionCard>
+
+          <SectionCard icon={<Brain className="h-8 w-8 text-primary" />} title="Federated Learning Excellence" delay={0.6}>
+            <p className="text-muted-foreground mb-4">
+              HealthLedger AI is more than just storage; it's a collaborative intelligence network. We enable "Learning without Sharing"—where institutions collaborate on AI models while keeping their local data completely localized.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <div className="p-4 rounded-lg bg-muted/50">
+                <h4 className="font-bold text-primary mb-1">Privacy-Preserving</h4>
+                <p className="text-xs text-muted-foreground">Raw medical records never leave the hospital or patient's control.</p>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/50">
+                <h4 className="font-bold text-primary mb-1">Collaborative Research</h4>
+                <p className="text-xs text-muted-foreground">Small datasets combine to create world-class AI models for disease detection.</p>
+              </div>
+            </div>
           </SectionCard>
         </div>
 

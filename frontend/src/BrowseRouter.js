@@ -9,6 +9,7 @@ import LoginPage from "./components/LoginPage";
 import PatientLogin from "./components/PatientLogin";
 import DoctorLogin from "./components/DoctorLogin";
 import DiagnosticLogin from "./components/DiagnosticLogin";
+import AdminLogin from "./components/AdminLogin";
 import PatientDashBoard from "./components/PatientDashBoard";
 import DoctorDashBoard from "./components/DoctorDashBoard";
 import DiagnosticDashBoard from "./components/DiagnosticDashBoard";
@@ -24,6 +25,7 @@ import UpdateProfile from "./components/UpdateProfile";
 import AboutUs from "./components/AboutPage";
 import TeamPage from "./components/TeamPage";
 import Footer from "./components/Footer";
+import FLDashboard from "./components/FLDashboard";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 const ProtectedRoute = ({ children }) => {
@@ -47,6 +49,16 @@ const RoutesWithProtection = () => (
     <Route path="/doctor_login" element={<DoctorLogin />} />
     <Route path="/diagnostic_login" element={<DiagnosticLogin />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/admin_login" element={<AdminLogin />} />
+
+    <Route
+      path="/fl-dashboard"
+      element={
+        <ProtectedRoute>
+          <FLDashboard />
+        </ProtectedRoute>
+      }
+    />
 
     <Route
       path="/patient/:hhNumber"

@@ -232,10 +232,10 @@ function DiagnosticForm() {
         </header>
 
         {success && (
-          <Alert className="mb-6 border-green-500 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertTitle className="text-green-800">Success</AlertTitle>
-            <AlertDescription className="text-green-700">{success}</AlertDescription>
+          <Alert className="mb-6 border-foreground/20 bg-muted/50">
+            <CheckCircle className="h-4 w-4 text-foreground" />
+            <AlertTitle className="text-foreground">Success</AlertTitle>
+            <AlertDescription className="text-muted-foreground">{success}</AlertDescription>
           </Alert>
         )}
 
@@ -311,7 +311,7 @@ function DiagnosticForm() {
                       Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 1MB each, up to 5 files)
                     </p>
                     {!formData.patientHHNumber && files.length > 0 && (
-                      <p className="text-xs text-amber-600">
+                      <p className="text-xs text-foreground font-bold">
                         ⚠️ Please enter Patient HH Number before uploading files
                       </p>
                     )}
@@ -320,12 +320,12 @@ function DiagnosticForm() {
                         {files.map((file, index) => {
                           const isUploaded = uploadedFiles.some(uf => uf.fileName === file.name);
                           return (
-                            <div key={index} className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-800 rounded border">
-                              <File className="h-4 w-4 text-blue-600" />
+                            <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded border border-border">
+                              <File className="h-4 w-4 text-primary" />
                               <span className="text-sm font-medium">{file.name}</span>
                               <span className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(2)} KB)</span>
                               {isUploaded && (
-                                <span className="ml-auto text-xs text-green-600 flex items-center gap-1">
+                                <span className="ml-auto text-xs text-foreground font-bold flex items-center gap-1">
                                   <CheckCircle className="h-3 w-3" />
                                   Uploaded
                                 </span>
@@ -336,7 +336,7 @@ function DiagnosticForm() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeFile(index)}
-                                  className="ml-auto h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  className="ml-auto h-6 w-6 p-0 text-foreground hover:bg-muted"
                                   title="Remove file"
                                 >
                                   <X className="h-3 w-3" />
@@ -361,8 +361,8 @@ function DiagnosticForm() {
                       </Button>
                     )}
                     {uploadedFiles.length > 0 && (
-                      <div className="text-sm text-green-600 flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4" />
+                      <div className="text-sm text-foreground font-bold flex items-center gap-1">
+                        <CheckCircle className="h-4 w-4 text-primary" />
                         {uploadedFiles.length} file(s) uploaded successfully to IPFS
                       </div>
                     )}

@@ -13,8 +13,8 @@ import { AlertTriangle } from "lucide-react";
 
 // Phone number validation for multiple countries
 const isValidPhoneNumber = (phone) => {
-  const cleanPhone = phone.replace(/[\s-]/g, '');
-  
+  const cleanPhone = phone.replace(/[\s\-]/g, '');
+
   // Common country code patterns
   const phonePatterns = [
     /^\+91[6-9]\d{9}$/,        // India: +91 followed by 10 digits starting with 6-9
@@ -33,7 +33,7 @@ const isValidPhoneNumber = (phone) => {
     /^\+65[6-9]\d{7}$/,        // Singapore: +65 followed by 8 digits
     /^\+60[1-9]\d{7,9}$/,      // Malaysia: +60 followed by 8-10 digits
   ];
-  
+
   return phonePatterns.some(pattern => pattern.test(cleanPhone));
 };
 
@@ -81,7 +81,7 @@ const PatientRegistry = () => {
 
   const validateForm = () => {
     const errors = [];
-    
+
     // Name validation
     if (!formData.name.trim()) {
       errors.push("Full name is required");
@@ -90,42 +90,42 @@ const PatientRegistry = () => {
     } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
       errors.push("Full name can only contain letters and spaces");
     }
-    
+
     // Email validation
     if (!formData.email.trim()) {
       errors.push("Email is required");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.push("Please enter a valid email address");
     }
-    
+
     // Phone number validation (International format with country codes)
     if (!formData.phoneNumber.trim()) {
       errors.push("Phone number is required");
     } else if (!isValidPhoneNumber(formData.phoneNumber)) {
       errors.push("Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901, +44 7123456789)");
     }
-    
+
     // Emergency contact phone validation
     if (!formData.emergencyContactPhone.trim()) {
       errors.push("Emergency contact phone is required");
     } else if (!isValidPhoneNumber(formData.emergencyContactPhone)) {
       errors.push("Please enter a valid emergency contact phone number with country code");
     }
-    
+
     // HH Number validation
     if (!formData.hhNumber.trim()) {
       errors.push("HH Number is required");
     } else if (!/^\d{6}$/.test(formData.hhNumber)) {
       errors.push("HH Number must be exactly 6 digits");
     }
-    
+
     // Required field validation
     if (!formData.dob) errors.push("Date of birth is required");
     if (!formData.gender) errors.push("Gender is required");
     if (!formData.bloodGroup) errors.push("Blood group is required");
     if (!formData.homeAddress.trim()) errors.push("Home address is required");
     if (!formData.emergencyContactName.trim()) errors.push("Emergency contact name is required");
-    
+
     return errors;
   };
 
@@ -133,7 +133,7 @@ const PatientRegistry = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    
+
     // Client-side validation
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
@@ -141,9 +141,9 @@ const PatientRegistry = () => {
       setLoading(false);
       return;
     }
-    
+
     console.log("Submitting patient registration:", formData);
-    
+
     try {
       const response = await client.post("/register/patient", formData);
       console.log("Registration successful:", response.data);
@@ -151,7 +151,7 @@ const PatientRegistry = () => {
       navigate("/login");
     } catch (err) {
       console.error("Registration error:", err);
-      
+
       // Handle different error types
       if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
         // Validation errors
@@ -236,14 +236,14 @@ const PatientRegistry = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Phone Number *</Label>
-                <Input 
-                  id="phoneNumber" 
-                  name="phoneNumber" 
-                  type="tel" 
-                  placeholder="+91 9876543210 or +1 2345678901" 
-                  required 
+                <Input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  placeholder="+91 9876543210 or +1 2345678901"
+                  required
                   onChange={handleChange}
-                  pattern="^\+[1-9][\d\s-]{7,15}$"
+                  pattern="^\+[1-9][\d\s\-]{7,15}$"
                   title="Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901)"
                 />
               </div>
@@ -253,14 +253,14 @@ const PatientRegistry = () => {
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="emergencyContactPhone">Emergency Contact Phone *</Label>
-                <Input 
-                  id="emergencyContactPhone" 
-                  name="emergencyContactPhone" 
-                  type="tel" 
-                  placeholder="+91 9876543210 or +1 2345678901" 
-                  required 
+                <Input
+                  id="emergencyContactPhone"
+                  name="emergencyContactPhone"
+                  type="tel"
+                  placeholder="+91 9876543210 or +1 2345678901"
+                  required
                   onChange={handleChange}
-                  pattern="^\+[1-9][\d\s-]{7,15}$"
+                  pattern="^\+[1-9][\d\s\-]{7,15}$"
                   title="Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901)"
                 />
               </div>
@@ -288,7 +288,7 @@ const PatientRegistry = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div >
   );
 };
 

@@ -4,8 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import NavBar_Logout from "./NavBar_Logout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { User, Users } from 'lucide-react';
+import { User, Users, Brain } from 'lucide-react';
 import client from "../api/client";
+import FLManager from "./FLManager";
 
 const DoctorDashBoardPage = () => {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ const DoctorDashBoardPage = () => {
           <h1 className="text-3xl font-bold tracking-tight">Doctor Dashboard</h1>
           <p className="text-muted-foreground">Welcome back, {doctorName || 'Doctor'}</p>
         </header>
-        
+
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           <Card className="flex flex-col">
             <CardHeader>
@@ -74,7 +75,10 @@ const DoctorDashBoardPage = () => {
               <Button className="w-full" onClick={() => navigate(`/doctor/${hhNumber}/patientlist`)}>View Patient List</Button>
             </div>
           </Card>
+
         </div>
+
+        <FLManager />
       </div>
     </div>
   );

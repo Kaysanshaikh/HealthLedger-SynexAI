@@ -302,9 +302,11 @@ contract HealthLedgerFL is HealthLedger {
         require(contribution.submittedAt != 0, "No contribution found");
         require(contribution.zkProofHash == proofHash, "Proof hash mismatch");
         
-        // Simplified verification - in production, call Groth16 verifier
-        // For now, we mark it as verified if hash matches
-        bool isValid = true; // TODO: Implement actual ZK verification
+        // In production, call Groth16 verifier contract:
+        // address verifier = modelVerifierMapping[roundToModel[roundId]];
+        // bool isValid = IVerifier(verifier).verifyProof(a, b, c, input);
+        
+        bool isValid = true; // Placeholder for prototype
         
         contribution.verified = isValid;
         verifiedProofs[proofHash] = isValid;

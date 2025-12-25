@@ -21,7 +21,7 @@ const upload = multer({
       'image/jpg',
       'image/png'
     ];
-    
+
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -42,11 +42,14 @@ router.post("/patient/:hhNumber/grant", recordsController.grantAccessByPatient);
 router.post("/patient/:hhNumber/revoke", recordsController.revokeAccessByPatient);
 router.get("/patient/:hhNumber/granted-doctors", recordsController.getGrantedDoctors);
 router.get("/patient/:hhNumber/all", recordsController.getPatientRecords);
-router.get("/diagnostic/:hhNumber/reports", recordsController.getDiagnosticReports); 
-router.get("/:recordId", recordsController.get); 
+router.get("/diagnostic/:hhNumber/reports", recordsController.getDiagnosticReports);
+router.get("/:recordId", recordsController.get);
 router.patch("/:recordId", authMiddleware, recordsController.update);
 router.post("/:recordId/access", authMiddleware, recordsController.grantAccess);
 router.delete("/:recordId/access", authMiddleware, recordsController.revokeAccess);
-router.get("/:recordId/access", recordsController.hasAccess); 
+router.get("/:recordId/access", recordsController.hasAccess);
+
+// Demo Intelligence Suite
+router.post("/seed-demo", recordsController.seedDemo);
 
 module.exports = router;

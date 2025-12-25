@@ -135,13 +135,13 @@ async function getRound(roundId) {
     const { contract } = initialize();
     const round = await contract.getRound(roundId);
 
-    const statusMap = ["Initiated", "Training", "Aggregating", "Completed", "Failed"];
+    const statusMap = ["initiated", "training", "aggregating", "completed", "failed"];
 
     return {
         roundId: Number(round.roundId),
         modelId: round.modelId,
         roundNumber: Number(round.roundNumber),
-        status: statusMap[round.status],
+        status: statusMap[Number(round.status)],
         minParticipants: Number(round.minParticipants),
         currentParticipants: Number(round.currentParticipants),
         aggregatedModelIPFS: round.aggregatedModelIPFS,
@@ -349,6 +349,17 @@ async function distributeReward(roundId, participantAddress, amount) {
     return await tx.wait();
 }
 
+/**
+ * Update minimum participants for a round
+ * @param {number} minParticipants - Minimum participants
+ * @returns {Promise<Object>} Transaction receipt
+ */
+async function setMinParticipants(minParticipants) {
+    const { contract } = initialize();
+    const tx = await contract.setMinParticipants(minParticipants);
+    return await tx.wait();
+}
+
 // ============================================
 // EXPORTS
 // ============================================
@@ -381,5 +392,8 @@ module.exports = {
     reportByzantineAttack,
 
     // Rewards
-    distributeReward
+    distributeReward,
+
+    // Config
+    setMinParticipants
 };

@@ -31,11 +31,11 @@ function DiagnosticReports() {
         setLoading(true);
         setError(null);
         setMessage(null);
-        
+
         console.log("📋 Fetching diagnostic reports for center HH Number:", hhNumber);
         const response = await client.get(`/records/diagnostic/${hhNumber}/reports`);
         console.log("✅ Diagnostic reports fetched:", response.data);
-        
+
         if (response.data.reports && response.data.reports.length > 0) {
           setReports(response.data.reports);
         } else {
@@ -44,10 +44,10 @@ function DiagnosticReports() {
         }
       } catch (err) {
         console.error("❌ Failed to fetch diagnostic reports:", err);
-        
+
         // User-friendly error message
         let errorMsg = "Unable to load reports.";
-        
+
         if (err.response?.data?.error) {
           errorMsg = err.response.data.error;
         } else if (err.message.includes("not found")) {
@@ -55,7 +55,7 @@ function DiagnosticReports() {
         } else if (err.message.includes("network")) {
           errorMsg = "Network error. Please check your connection and try again.";
         }
-        
+
         setError(errorMsg);
         setReports([]);
       } finally {
@@ -106,7 +106,7 @@ function DiagnosticReports() {
                     <ReportDetail label="Record ID" value={report.record_id} />
                     <ReportDetail label="Patient HH Number" value={report.patient_hh_number} />
                     <ReportDetail label="Type" value={report.record_type || 'Diagnostic Report'} />
-                    
+
                     {/* Test Details */}
                     {report.metadata?.testName && (
                       <ReportDetail label="Test Name" value={report.metadata.testName} />
@@ -130,7 +130,7 @@ function DiagnosticReports() {
                         </dd>
                       </div>
                     )}
-                    
+
                     {/* File Information */}
                     {report.metadata?.fileName && (
                       <ReportDetail label="Attached File" value={report.metadata.fileName} />
@@ -138,17 +138,17 @@ function DiagnosticReports() {
                     {report.metadata?.fileSize && (
                       <ReportDetail label="File Size" value={`${(report.metadata.fileSize / 1024).toFixed(2)} KB`} />
                     )}
-                    
+
                     <ReportDetail label="IPFS CID" value={report.ipfs_cid} isCid={true} />
                     <ReportDetail label="Created At" value={new Date(report.created_at).toLocaleString()} />
                   </dl>
-                  
+
                   {report.ipfs_cid && report.ipfs_cid !== 'QmPlaceholder' && (
                     <div className="mt-6">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={() => {
-                          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+                          const apiUrl = process.env.REACT_APP_API_URL || '/api';
                           window.open(`${apiUrl}/records/file/${report.ipfs_cid}`, '_blank');
                         }}
                       >
@@ -177,11 +177,11 @@ function DiagnosticReports() {
             </CardContent>
           </Card>
         )}
-        
+
         {!loading && reports.length === 0 && error && (
           <Card>
             <CardContent className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+              <AlertTriangle className="h-12 w-12 mx-auto text-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Unable to Load Reports</h3>
               <p className="text-muted-foreground mb-4">
                 {error}

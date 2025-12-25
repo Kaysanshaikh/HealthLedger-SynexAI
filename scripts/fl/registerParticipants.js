@@ -4,7 +4,7 @@
  */
 
 require("dotenv").config();
-const flService = require("../services/federatedLearningService");
+const flService = require("../../services/federatedLearningService");
 
 // Production participant addresses (update with your actual addresses)
 const PARTICIPANTS = [

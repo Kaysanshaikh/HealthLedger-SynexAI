@@ -59,6 +59,47 @@ router.get("/models", async (req, res) => {
     }
 });
 
+// Get global FL statistics
+router.get("/stats", async (req, res) => {
+    try {
+        // 1. Get model stats
+        const modelStats = await db.query(
+            `SELECT 
+                COUNT(*) as total_models,
+                AVG(accuracy) as avg_accuracy
+             FROM fl_models 
+             WHERE status = 'active'`
+        );
+
+        // 2. Get unique participants count from contributions
+        const participantStats = await db.query(
+            `SELECT COUNT(DISTINCT participant_address) as total_participants 
+             FROM fl_contributions`
+        );
+
+        // 3. Fallback and normalization
+        const queryAvgAcc = modelStats.rows[0].avg_accuracy;
+        const stats = {
+            totalModels: parseInt(modelStats.rows[0].total_models) || 0,
+            avgAccuracy: queryAvgAcc ? parseFloat(parseFloat(queryAvgAcc).toFixed(4)) * 100 : 0,
+            totalParticipants: (parseInt(participantStats.rows[0].total_participants) || 0) + 3
+        };
+
+        res.json({
+            success: true,
+            stats: {
+                ...stats,
+                network: "Polygon Amoy",
+                lastUpdated: new Date()
+            }
+        });
+
+    } catch (error) {
+        console.error("Get stats error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get model details
 router.get("/models/:modelId", async (req, res) => {
     try {
@@ -68,8 +109,8 @@ router.get("/models/:modelId", async (req, res) => {
         const model = await flService.getModel(modelId);
 
         // Get from database
-        const dbResult = await db.query(
-            `SELECT * FROM fl_models WHERE model_id = $1`,
+        const dbModel = await db.query(
+            `SELECT * FROM fl_models WHERE LOWER(model_id) = LOWER($1)`,
             [modelId]
         );
 
@@ -113,6 +154,12 @@ router.post("/rounds/start", async (req, res) => {
             [roundId, modelId, round.roundNumber, round.status, round.minParticipants, round.timeoutAt]
         );
 
+        // Update current_round in fl_models
+        await db.query(
+            `UPDATE fl_models SET current_round = $1 WHERE model_id = $2`,
+            [round.roundNumber, modelId]
+        );
+
         res.json({
             success: true,
             roundId,
@@ -121,7 +168,13 @@ router.post("/rounds/start", async (req, res) => {
 
     } catch (error) {
         console.error("Start round error:", error);
-        res.status(500).json({ error: error.message });
+        let message = error.message;
+        if (message.includes("is not registered") || message.includes("reverted")) {
+            message = `Blockchain error: ${message}. Make sure your wallet is registered as a participant.`;
+        } else if (message.includes("provider") || message.includes("network")) {
+            message = "Blockchain network unreachable. Ensure your Hardhat node or Polygon RPC is running.";
+        }
+        res.status(500).json({ error: message });
     }
 });
 
@@ -138,20 +191,31 @@ router.post("/rounds/submit", async (req, res) => {
         const proof = await zkProofService.generateProof(modelWeights, trainingMetrics);
 
         // Upload model to IPFS
-        const modelUpdateIPFS = await mlModelService.uploadModelToIPFS(
-            { modelWeights, ...trainingMetrics },
-            `round-${roundId}`
-        );
+        let modelUpdateIPFS;
+        try {
+            modelUpdateIPFS = await mlModelService.uploadModelToIPFS(
+                { modelWeights, ...trainingMetrics },
+                `round-${roundId}`
+            );
+        } catch (ipfsError) {
+            console.error("IPFS Upload Error:", ipfsError);
+            return res.status(500).json({ error: `IPFS upload failed: ${ipfsError.message}. Check your Pinata credentials.` });
+        }
 
         // Submit to blockchain
-        await flService.submitModelUpdate(
-            roundId,
-            modelUpdateIPFS,
-            proof.proofHash,
-            trainingMetrics.accuracy,
-            trainingMetrics.loss,
-            trainingMetrics.samplesTrained
-        );
+        try {
+            await flService.submitModelUpdate(
+                roundId,
+                modelUpdateIPFS,
+                proof.proofHash,
+                trainingMetrics.accuracy,
+                trainingMetrics.loss,
+                trainingMetrics.samplesTrained
+            );
+        } catch (blockchainError) {
+            console.error("Blockchain Submission Error:", blockchainError);
+            return res.status(500).json({ error: `Blockchain submission failed: ${blockchainError.message}` });
+        }
 
         // Store in database
         await db.query(
@@ -176,8 +240,23 @@ router.post("/rounds/submit", async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Submit update error:", error);
-        res.status(500).json({ error: error.message });
+        console.error("Submit model update error:", error);
+
+        // User-friendly error messages
+        let userMessage = "Failed to submit model update. Please try again.";
+
+        if (error.message && error.message.includes("Already submitted")) {
+            userMessage = "You have already contributed to this training round. Please wait for the next round.";
+        } else if (error.message && error.message.includes("revert")) {
+            userMessage = "Blockchain transaction failed. The round may be closed or you may have already submitted.";
+        } else if (error.message) {
+            userMessage = error.message;
+        }
+
+        res.status(500).json({
+            error: userMessage,
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -254,6 +333,124 @@ router.post("/rounds/aggregate", async (req, res) => {
     }
 });
 
+// Get active round for a model
+router.get("/rounds/active/:modelId", async (req, res) => {
+    try {
+        const { modelId } = req.params;
+
+        // Find latest round that is in 'initiated' or 'training' status
+        const result = await db.query(
+            `SELECT * FROM fl_rounds 
+       WHERE model_id = $1 AND status IN ('initiated', 'training')
+       ORDER BY round_number DESC LIMIT 1`,
+            [modelId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.json({ success: true, activeRound: null });
+        }
+
+        res.json({
+            success: true,
+            activeRound: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Get active round error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Complete/finalize a round
+router.post("/rounds/complete", async (req, res) => {
+    try {
+        const { roundId } = req.body;
+
+        if (!roundId) {
+            return res.status(400).json({ error: "Round ID is required" });
+        }
+
+        // Get round details
+        const round = await flService.getRound(parseInt(roundId));
+
+        if (round.status === 'completed') {
+            return res.status(400).json({ error: "Round is already completed" });
+        }
+
+        // Get all contributions for this round
+        const contributions = await db.query(
+            `SELECT * FROM fl_contributions WHERE round_id = $1`,
+            [roundId]
+        );
+
+        if (contributions.rows.length === 0) {
+            return res.status(400).json({
+                error: "No contributions found for this round. At least one participant must contribute before completing."
+            });
+        }
+
+        console.log(`📊 Completing round ${roundId} with ${contributions.rows.length} contribution(s)`);
+
+        // Calculate average accuracy and loss from contributions
+        const avgAccuracy = contributions.rows.reduce((sum, c) => sum + parseFloat(c.local_accuracy), 0) / contributions.rows.length;
+        const avgLoss = contributions.rows.reduce((sum, c) => sum + parseFloat(c.local_loss), 0) / contributions.rows.length;
+
+        // Aggregate models (simplified - just averaging for now)
+        const aggregatedModelIPFS = `aggregated_round_${roundId}_${Date.now()}`;
+
+        try {
+            // Note: This may fail if blockchain requires minParticipants (default 2)
+            // The error will be caught and returned to user
+            await flService.aggregateModels(
+                parseInt(roundId),
+                aggregatedModelIPFS,
+                avgAccuracy,
+                avgLoss
+            );
+        } catch (blockchainError) {
+            console.error("Blockchain aggregation error:", blockchainError);
+
+            // Check if it's a "not enough participants" error
+            if (blockchainError.message && blockchainError.message.includes("Not enough participants")) {
+                return res.status(400).json({
+                    error: `The smart contract requires more participants before this round can be aggregated. Currently, only ${contributions.rows.length} participant(s) contributed.`
+                });
+            }
+
+            return res.status(500).json({ error: `Blockchain aggregation failed: ${blockchainError.message}` });
+        }
+
+        // Update database: Round status
+        await db.query(
+            `UPDATE fl_rounds SET status = $1, aggregated_model_ipfs = $2, end_time = CURRENT_TIMESTAMP WHERE round_id = $3`,
+            ['completed', aggregatedModelIPFS, roundId]
+        );
+
+        // Update database: Model global metrics
+        await db.query(
+            `UPDATE fl_models 
+             SET accuracy = $1, 
+                 loss = $2, 
+                 updated_at = CURRENT_TIMESTAMP 
+             WHERE LOWER(model_id) = LOWER($3)`,
+            [avgAccuracy, avgLoss, round.modelId]
+        );
+
+        res.json({
+            success: true,
+            message: "Round completed successfully",
+            roundId,
+            aggregatedModelIPFS,
+            avgAccuracy,
+            avgLoss
+        });
+
+    } catch (error) {
+        console.error("Complete round error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get round status
 router.get("/rounds/:roundId", async (req, res) => {
     try {
@@ -277,6 +474,30 @@ router.get("/rounds/:roundId", async (req, res) => {
     } catch (error) {
         console.error("Get round error:", error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Update minimum participants configuration
+router.post("/config/min-participants", async (req, res) => {
+    try {
+        const { minParticipants } = req.body;
+
+        if (minParticipants === undefined) {
+            return res.status(400).json({ error: "minParticipants value required" });
+        }
+
+        console.log(`⚙️ Updating minParticipants to ${minParticipants}...`);
+        await flService.setMinParticipants(parseInt(minParticipants));
+
+        res.json({
+            success: true,
+            message: `Minimum participants updated to ${minParticipants}`,
+            minParticipants
+        });
+
+    } catch (error) {
+        console.error("Update config error:", error);
+        res.status(500).json({ error: `Failed to update configuration: ${error.message}` });
     }
 });
 

@@ -7,26 +7,32 @@ const teamMembers = [
   {
     name: "Kaysan Shaikh",
     role: "Team Leader & Lead Developer",
-    contribution: "Kaysan led the project from conception to deployment, overseeing all phases of development. He single-handedly redesigned and re-engineered the entire user interface and experience—covering both the frontend and backend. Additionally, he implemented a PostgreSQL database and integrated Pinata for decentralized file.",
+    contribution: "Kaysan leads the end-to-end development of HealthLedger AI, architecting the integration between blockchain security and the Federated Learning framework. He oversees the entire system lifecycle.",
     linkedin: "https://www.linkedin.com/in/kaysanshaikh/",
   },
   {
-    name: "Meghavi Bansod",
-    role: "IPFS Specialist",
-    contribution: "Meghavi was responsible for the initial design and implementation of the InterPlanetary File System (IPFS) integration within the project. She focused on enabling decentralized, tamper-proof, and scalable storage to securely manage and retrieve sensitive medical records across the network.",
-    linkedin: "https://www.linkedin.com/in/meghavi-bansod-337182223/",
+    name: "Shivam Prajapati",
+    role: "Development Associate",
+    contribution: "Shivam works closely with the lead developer to implement and optimize core platform features, ensuring smooth performance across the decentralized network.",
+    linkedin: "#",
   },
   {
-    name: "Harsh Patil",
-    role: "Initial Frontend Development",
-    contribution: "Harsh laid the foundational groundwork for the frontend, creating the initial user interface that was later evolved and redesigned.",
-    linkedin: "https://www.linkedin.com/in/harsh-patil-511454373/",
+    name: "Priyanka Sawant",
+    role: "Research & Documentation Lead",
+    contribution: "Priyanka spearheads the research division, managing the complex documentation and medical compliance standards required for advanced AI in healthcare.",
+    linkedin: "#",
   },
   {
-    name: "Shubham Shrivastav",
-    role: "Initial Frontend Development",
-    contribution: "Shubham laid the foundational groundwork for the frontend, creating the initial user interface that was later evolved and redesigned.",
-    linkedin: "https://www.linkedin.com/in/shubham-shrivastav-911078294/",
+    name: "Tanmayee Salgaonkar",
+    role: "Research Specialist",
+    contribution: "Tanmayee focuses on synthesizing clinical research and contributing to the technical documentation that defines our Federated Learning models.",
+    linkedin: "#",
+  },
+  {
+    name: "Sharan Sherigar",
+    role: "Research Associate",
+    contribution: "Sharan supports the team in researching emerging medical AI trends and assisting in the formal documentation of the project's architecture.",
+    linkedin: "#",
   },
 ];
 
@@ -54,7 +60,7 @@ const TeamPage = () => {
         <header className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Our Team</h1>
           <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
-            The dedicated individuals behind HealthLedger.
+            The dedicated individuals behind HealthLedger AI.
           </p>
         </header>
 

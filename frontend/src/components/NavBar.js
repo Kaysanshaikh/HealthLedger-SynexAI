@@ -33,7 +33,7 @@ const NavBar = () => {
             className="text-xl font-semibold cursor-pointer"
             onClick={() => navigate("/")}
           >
-            HealthLedger
+            HealthLedger AI
           </span>
         </div>
 

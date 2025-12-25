@@ -304,13 +304,13 @@ async function uploadModelToIPFS(model, modelId) {
             timestamp: Date.now()
         };
 
-        const cid = await pinataService.uploadJSON({
+        const result = await pinataService.uploadJSON({
             model: encrypted.toString('base64'),
             metadata
         });
 
-        console.log("✅ Model uploaded to IPFS:", cid);
-        return cid;
+        console.log("✅ Model uploaded to IPFS:", result.cid);
+        return result.cid;
 
     } catch (error) {
         console.error("❌ IPFS upload failed:", error.message);

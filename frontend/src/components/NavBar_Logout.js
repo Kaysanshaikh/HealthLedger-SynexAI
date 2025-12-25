@@ -5,7 +5,7 @@ import { ModeToggle } from "./mode-toggle";
 import { Menu, X } from "lucide-react";
 import logo from "./logo_new.jpg";
 
-const NavBar_Logout = () => {
+const NavBarLogout = () => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -35,7 +35,7 @@ const NavBar_Logout = () => {
             className="text-xl font-semibold cursor-pointer"
             onClick={() => navigate("/")}
           >
-            HealthLedger
+            HealthLedger AI
           </span>
         </div>
 
@@ -68,4 +68,4 @@ const NavBar_Logout = () => {
   );
 };
 
-export default NavBar_Logout;
+export default NavBarLogout;

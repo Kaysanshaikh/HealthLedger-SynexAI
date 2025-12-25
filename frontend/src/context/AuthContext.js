@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
   const login = async ({ role, hhNumber }) => {
     setLoading(true);
     setError(null);
-    
+
     // Timeout for MetaMask operations
     const timeout = (ms, promise, errorMessage) => {
       return Promise.race([
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       console.log("🔐 Starting login process...", { role, hhNumber });
-      
+
       // Check if MetaMask is installed
       if (!window.ethereum) {
         throw new Error("MetaMask is not installed. Please install MetaMask extension to continue.");
@@ -71,16 +71,16 @@ export const AuthProvider = ({ children }) => {
         window.ethereum.request({ method: "eth_requestAccounts" }),
         "MetaMask connection timeout. Please unlock MetaMask and try again."
       );
-      
+
       if (!accounts || accounts.length === 0) {
         throw new Error("No wallet accounts found. Please unlock MetaMask.");
       }
-      
+
       const walletAddress = accounts[0];
       console.log("✅ Wallet connected:", walletAddress);
 
       // 2. Create message to sign
-      const message = `Welcome to HealthLedger!\n\nSign this message to log in as a ${role}.\n\nWallet: ${walletAddress}`;
+      const message = `Welcome to HealthLedger AI!\n\nSign this message to log in as a ${role}.\n\nWallet: ${walletAddress}`;
       const web3 = new Web3(window.ethereum);
 
       // 3. Sign message with timeout
@@ -109,10 +109,10 @@ export const AuthProvider = ({ children }) => {
       return { token: apiToken, user: apiUser };
     } catch (err) {
       console.error("❌ Login error:", err);
-      
+
       // User-friendly error messages
       let userMessage = "Unable to login. Please try again.";
-      
+
       if (err.message.includes("User rejected") || err.message.includes("User denied")) {
         userMessage = "You rejected the connection request. Please try again and approve the request.";
       } else if (err.message.includes("timeout")) {
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }) => {
       } else if (err.message) {
         userMessage = err.message;
       }
-      
+
       setError(userMessage);
       throw new Error(userMessage);
     } finally {
@@ -144,7 +144,7 @@ export const AuthProvider = ({ children }) => {
     if (!window.ethereum) {
       throw new Error("MetaMask is not installed. Please install MetaMask extension.");
     }
-    
+
     // Timeout helper
     const timeout = (ms, promise) => {
       return Promise.race([
@@ -154,17 +154,17 @@ export const AuthProvider = ({ children }) => {
         )
       ]);
     };
-    
+
     try {
       const accounts = await timeout(
         30000, // 30 second timeout
         window.ethereum.request({ method: "eth_requestAccounts" })
       );
-      
+
       if (!accounts || accounts.length === 0) {
         throw new Error("No wallet accounts found. Please unlock MetaMask.");
       }
-      
+
       return accounts[0];
     } catch (err) {
       if (err.message.includes("User rejected") || err.message.includes("User denied")) {

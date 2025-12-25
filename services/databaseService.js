@@ -1,8 +1,13 @@
 const { query, getClient } = require('../config/database');
 
 class DatabaseService {
+  // Direct query method for compatibility with FL routes
+  async query(text, params) {
+    return await query(text, params);
+  }
+
   // ==================== USER OPERATIONS ====================
-  
+
   async createUser(walletAddress, email, role, hhNumber, passwordHash = null) {
     const result = await query(
       `INSERT INTO users (wallet_address, email, role, hh_number, password_hash)
@@ -15,8 +20,16 @@ class DatabaseService {
 
   async getUserByWallet(walletAddress) {
     const result = await query(
-      'SELECT * FROM users WHERE wallet_address = $1',
+      'SELECT * FROM users WHERE wallet_address = $1 LIMIT 1',
       [walletAddress]
+    );
+    return result.rows[0];
+  }
+
+  async getUserByWalletAndRole(walletAddress, role) {
+    const result = await query(
+      'SELECT * FROM users WHERE LOWER(wallet_address) = LOWER($1) AND role = $2',
+      [walletAddress, role]
     );
     return result.rows[0];
   }
@@ -46,7 +59,7 @@ class DatabaseService {
   }
 
   // ==================== PATIENT PROFILE OPERATIONS ====================
-  
+
   async createPatientProfile(data) {
     const {
       userId, hhNumber, fullName, dateOfBirth, gender, bloodGroup,
@@ -62,8 +75,8 @@ class DatabaseService {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [userId, hhNumber, fullName, dateOfBirth, gender, bloodGroup,
-       homeAddress, phoneNumber, emergencyContactName, emergencyContactPhone,
-       allergies, chronicConditions]
+        homeAddress, phoneNumber, emergencyContactName, emergencyContactPhone,
+        allergies, chronicConditions]
     );
     return result.rows[0];
   }
@@ -80,7 +93,7 @@ class DatabaseService {
   }
 
   // ==================== DOCTOR PROFILE OPERATIONS ====================
-  
+
   async createDoctorProfile(data) {
     const {
       userId, hhNumber, fullName, specialization, hospital,
@@ -94,7 +107,7 @@ class DatabaseService {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [userId, hhNumber, fullName, specialization, hospital,
-       licenseNumber, phoneNumber, yearsOfExperience]
+        licenseNumber, phoneNumber, yearsOfExperience]
     );
     return result.rows[0];
   }
@@ -111,7 +124,7 @@ class DatabaseService {
   }
 
   // ==================== DIAGNOSTIC PROFILE OPERATIONS ====================
-  
+
   async createDiagnosticProfile(data) {
     const {
       userId, hhNumber, centerName, location, phoneNumber,
@@ -125,7 +138,7 @@ class DatabaseService {
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [userId, hhNumber, centerName, location, phoneNumber,
-       servicesOffered, accreditation]
+        servicesOffered, accreditation]
     );
     return result.rows[0];
   }
@@ -142,7 +155,7 @@ class DatabaseService {
   }
 
   // ==================== RECORD INDEX OPERATIONS ====================
-  
+
   async indexRecord(data) {
     const {
       recordId, patientWallet, patientHHNumber, creatorWallet,
@@ -156,7 +169,7 @@ class DatabaseService {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [recordId, patientWallet, patientHHNumber, creatorWallet,
-       ipfsCid, recordType, metadata, searchableText, blockchainTxHash]
+        ipfsCid, recordType, metadata, searchableText, blockchainTxHash]
     );
     return result.rows[0];
   }
@@ -193,11 +206,11 @@ class DatabaseService {
        LIMIT $2`,
       [patientWallet, limit]
     );
-    
+
     // Log the query for debugging
     console.log(`🔍 Database query for patient records: patient_wallet = ${patientWallet}, limit = ${limit}`);
     console.log(`📊 Found ${result.rows.length} records in database`);
-    
+
     return result.rows;
   }
 
@@ -214,16 +227,16 @@ class DatabaseService {
        LIMIT $2`,
       [patientHHNumber, limit]
     );
-    
+
     // Log the query for debugging
     console.log(`🔍 Database query for patient records by HH: patient_hh_number = ${patientHHNumber}, limit = ${limit}`);
     console.log(`📊 Found ${result.rows.length} records in database`);
-    
+
     return result.rows;
   }
 
   // ==================== ACCESS LOG OPERATIONS ====================
-  
+
   async logAccess(recordId, accessorWallet, accessorRole, action, ipAddress = null, userAgent = null) {
     const result = await query(
       `INSERT INTO access_logs 
@@ -257,7 +270,7 @@ class DatabaseService {
   }
 
   // ==================== DOCTOR-PATIENT ACCESS OPERATIONS ====================
-  
+
   async grantDoctorAccess(doctorWallet, patientWallet, grantedBy) {
     const result = await query(
       `INSERT INTO doctor_patient_access 
@@ -295,7 +308,7 @@ class DatabaseService {
   }
 
   // ==================== NOTIFICATION OPERATIONS ====================
-  
+
   async createNotification(userWallet, title, message, type, relatedRecordId = null) {
     const result = await query(
       `INSERT INTO notifications 
@@ -312,13 +325,13 @@ class DatabaseService {
       SELECT * FROM notifications 
       WHERE user_wallet = $1
     `;
-    
+
     if (unreadOnly) {
       queryText += ' AND is_read = false';
     }
-    
+
     queryText += ' ORDER BY created_at DESC LIMIT $2';
-    
+
     const result = await query(queryText, [userWallet, limit]);
     return result.rows;
   }
@@ -363,7 +376,7 @@ class DatabaseService {
   }
 
   // ==================== UPDATE OPERATIONS (FOR BLOCKCHAIN SYNC) ====================
-  
+
   async updatePatientProfile(hhNumber, data) {
     const { fullName, dateOfBirth, gender, bloodGroup, homeAddress } = data;
     const result = await query(

@@ -4,7 +4,7 @@
  */
 
 // Load environment variables
-require("dotenv").config({ path: ".env.fl.local" });
+require("dotenv").config({ path: ".env" });
 
 const flService = require("../../services/federatedLearningService");
 const zkProofService = require("../../services/zkProofService");
