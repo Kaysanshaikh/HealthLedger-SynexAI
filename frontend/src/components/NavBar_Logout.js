@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { ModeToggle } from "./mode-toggle";
 import { Menu, X } from "lucide-react";
-import logo from "./logo_new.jpg";
+import logo from "./logo_oval.png";
 
 const NavBarLogout = () => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const NavBarLogout = () => {
         {/* Logo and Title */}
         <div className="flex items-center gap-4">
           <img
-            className="h-10 w-auto cursor-pointer"
+            className="h-10 w-24 cursor-pointer rounded-full object-cover border border-primary/20 shadow-sm"
             src={logo}
             alt="Logo"
             onClick={() => navigate("/")}
