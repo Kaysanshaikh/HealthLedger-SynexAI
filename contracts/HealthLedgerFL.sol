@@ -80,7 +80,7 @@ contract HealthLedgerFL is HealthLedger {
     
     bytes32[] public modelIds;
     uint256 public roundCounter;
-    uint256 public minParticipantsGlobal = 2;
+    uint256 public minParticipantsGlobal = 1;
     uint256 public roundTimeout = 3600; // 1 hour in seconds
     
     // ============================================
@@ -450,6 +450,10 @@ contract HealthLedgerFL is HealthLedger {
     
     function setMinParticipants(uint256 _minParticipants) external onlyAdmin {
         minParticipantsGlobal = _minParticipants;
+    }
+    
+    function setRoundMinParticipants(uint256 roundId, uint256 _min) external onlyAdmin validRound(roundId) {
+        flRounds[roundId].minParticipants = _min;
     }
     
     function setRoundTimeout(uint256 _timeout) external onlyAdmin {

@@ -54,16 +54,26 @@ const FLManager = () => {
     };
 
     const parseBlockchainError = (err) => {
-        const errorMsg = err.response?.data?.error || err.message || '';
+        // 1. Check if backend provided a specialized error message first
+        if (err.response?.data?.error) {
+            const serverError = err.response.data.error;
+            // If it's a long ethers dump from the backend, try to extract the reason
+            if (serverError.includes('execution reverted:')) {
+                const match = serverError.match(/execution reverted: "([^"]+)"/) || serverError.match(/execution reverted: ([^,]+)/);
+                if (match && match[1]) return match[1].trim();
+            }
+            return serverError;
+        }
 
-        // Handle common blockchain errors
+        // 2. Fallback to generic err message
+        const errorMsg = err.message || '';
+
         if (errorMsg.includes('Already submitted')) return 'You have already contributed to this training round.';
         if (errorMsg.includes('insufficient funds')) return 'Insufficient funds in wallet for gas fees.';
         if (errorMsg.includes('user rejected')) return 'Transaction was rejected in wallet.';
         if (errorMsg.includes('execution reverted')) {
-            // Try to extract reason from "execution reverted: reason"
-            const match = errorMsg.match(/execution reverted: "([^"]+)"/);
-            if (match) return match[1];
+            const match = errorMsg.match(/execution reverted: "([^"]+)"/) || errorMsg.match(/execution reverted: ([^,]+)/);
+            if (match && match[1]) return match[1].trim();
         }
 
         return errorMsg.length > 100 ? errorMsg.substring(0, 100) + '...' : errorMsg;

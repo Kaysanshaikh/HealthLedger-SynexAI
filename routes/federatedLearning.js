@@ -442,13 +442,20 @@ router.post("/rounds/complete", async (req, res) => {
             });
         }
 
-        console.log(`📊 Completing round ${roundId} with ${contributions.rows.length} contribution(s)`);
+        // Proactive check: Compare against blockchain requirement
+        if (round.currentParticipants < round.minParticipants) {
+            return res.status(400).json({
+                error: `Not enough participants to complete this round. The smart contract requires at least ${round.minParticipants} contributor(s), but only ${round.currentParticipants} have participated so far.`
+            });
+        }
+
+        console.log(`📊 Completing round ${roundId} with ${round.currentParticipants} on-chain participant(s) (DB shows ${contributions.rows.length})`);
 
         // Calculate average accuracy and loss from contributions
         const avgAccuracy = contributions.rows.reduce((sum, c) => sum + parseFloat(c.local_accuracy), 0) / contributions.rows.length;
         const avgLoss = contributions.rows.reduce((sum, c) => sum + parseFloat(c.local_loss), 0) / contributions.rows.length;
 
-        // Aggregate models (simplified - just averaging for now)
+        // Aggregate models
         const aggregatedModelIPFS = `aggregated_round_${roundId}_${Date.now()}`;
 
         try {
@@ -491,7 +498,6 @@ router.post("/rounds/complete", async (req, res) => {
 
         res.json({
             success: true,
-            message: "Round completed successfully",
             roundId,
             aggregatedModelIPFS,
             avgAccuracy,

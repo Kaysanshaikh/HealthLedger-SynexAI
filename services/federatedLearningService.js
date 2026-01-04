@@ -305,6 +305,18 @@ async function aggregateModels(roundId, aggregatedModelIPFS, newAccuracy, newLos
 }
 
 /**
+ * Set minimum participants for a specific round
+ * @param {number} roundId - Round ID
+ * @param {number} minParticipants - Minimum participants required
+ * @returns {Promise<Object>} Transaction receipt
+ */
+async function setRoundMinParticipants(roundId, minParticipants) {
+    const { contract } = initialize();
+    const tx = await contract.setRoundMinParticipants(roundId, minParticipants);
+    return await tx.wait();
+}
+
+/**
  * Finalize round
  * @param {number} roundId - Round ID
  * @returns {Promise<Object>} Transaction receipt
