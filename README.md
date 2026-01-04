@@ -3,7 +3,7 @@ Privacy-Preserving Federated Learning for Healthcare
 
 > Zero-Knowledge Proof enabled Blockchain-Federated Learning for Healthcare
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![Solidity](https://img.shields.io/badge/solidity-^0.8.24-blue)](https://soliditylang.org/)
 
@@ -58,9 +58,8 @@ npm start
 
 ## 📚 Documentation
 
-- [Production Deployment Guide](PRODUCTION_DEPLOYMENT.md)
-- [API Documentation](API_DOCUMENTATION.md)
-- [Implementation Walkthrough](walkthrough.md)
+- [Master Guide](MASTER_GUIDE.md) — One-stop-shop for Setup, Architecture, and Deployment.
+- [API Reference](API_REFERENCE.md) — Detailed technical specification for the SynexAI API.
 
 ## 🏗️ Architecture
 
@@ -143,7 +142,8 @@ Contributions welcome! Please read our contributing guidelines first.
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file
+Proprietary License - See [LICENSE](LICENSE) for full terms. 
+Commercial use requires explicit written permission from the Developer.
 
 ## 🙏 Acknowledgments
 
