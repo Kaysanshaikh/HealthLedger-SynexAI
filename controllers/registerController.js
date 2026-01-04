@@ -149,17 +149,12 @@ exports.registerDoctor = async (req, res) => {
     // Check if wallet is already registered for this SPECIFIC role
     const existingUserWithRole = await db.getUserByWalletAndRole(walletAddress, 'doctor');
     if (existingUserWithRole) {
-      // If they have multiple doctor accounts, we should check which HH number they are trying to register
-      const existingDoctorWithSameHH = await db.getUserByWalletAndHH(walletAddress, parseInt(hhNumber));
-      if (existingDoctorWithSameHH) {
-        console.log(`⚠️ Wallet ${walletAddress} already registered as doctor with HH Number ${hhNumber}`);
-        return res.status(400).json({
-          error: `This wallet is already registered as a doctor with HH Number ${hhNumber}. Please login instead.`,
-          isRegistered: true,
-          redirectTo: "/login",
-          existingHHNumber: hhNumber
-        });
-      }
+      console.log(`⚠️ Wallet ${walletAddress} already registered as doctor`);
+      return res.status(400).json({
+        error: "This wallet is already registered as a doctor. Please login instead.",
+        isRegistered: true,
+        redirectTo: "/login"
+      });
     }
 
     // Note: Same wallet can be used for different roles (e.g., patient + doctor)
@@ -241,9 +236,38 @@ exports.registerDiagnostic = async (req, res) => {
   try {
     const { name, location, email, hhNumber, walletAddress, phoneNumber, servicesOffered, accreditation } = req.body;
 
-    // Validate required fields
-    if (!name || !location || !email || !hhNumber || !walletAddress) {
-      return res.status(400).json({ error: "All fields are required" });
+    // Validate all fields
+    const validationResult = validation.validateDiagnosticRegistration(req.body);
+    if (!validationResult.isValid) {
+      return res.status(400).json({
+        error: "Validation failed",
+        errors: validationResult.errors
+      });
+    }
+
+    console.log(`🔍 Checking if HH Number ${hhNumber} is available...`);
+
+    // Check if HH number is already used in DATABASE (HH numbers must be unique)
+    const existingHHNumber = await db.getUserByHHNumber(parseInt(hhNumber));
+    if (existingHHNumber) {
+      console.log(`⚠️ HH Number ${hhNumber} already exists in database as ${existingHHNumber.role}`);
+      return res.status(400).json({
+        error: `This HH Number is already registered as a ${existingHHNumber.role}. Please use a unique 6-digit HH Number.`,
+        field: "hhNumber"
+      });
+    }
+
+    console.log(`✅ HH Number ${hhNumber} is available in database`);
+
+    // Check if wallet is already registered for this SPECIFIC role
+    const existingUserWithRole = await db.getUserByWalletAndRole(walletAddress, 'diagnostic');
+    if (existingUserWithRole) {
+      console.log(`⚠️ Wallet ${walletAddress} already registered as diagnostic center`);
+      return res.status(400).json({
+        error: "This wallet is already registered as a diagnostic center. Please login instead.",
+        isRegistered: true,
+        redirectTo: "/login"
+      });
     }
 
     console.log("📝 Registering diagnostic center:", { name, hhNumber, walletAddress });
@@ -296,6 +320,23 @@ exports.registerDiagnostic = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Register diagnostic error:", error);
-    res.status(500).json({ error: error.message || "Failed to register diagnostic center" });
+
+    // Check if it's a "record already exists" error from blockchain
+    if (error.message && error.message.includes('already exists')) {
+      return res.status(400).json({
+        error: "This HH Number is already registered on the blockchain. If you don't see it in the system, the database may be out of sync.",
+        hint: "Run: npm run sync:blockchain diagnostic " + hhNumber,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+
+    // Get user-friendly error message
+    const userMessage = validation.getUserFriendlyError(error);
+
+    res.status(500).json({
+      error: userMessage,
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };

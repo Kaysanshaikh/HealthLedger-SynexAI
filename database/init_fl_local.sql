@@ -113,18 +113,20 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Doctor-Patient relationships
+-- Doctor-Patient relationships (STRICT ACCESS CONTROL)
 CREATE TABLE IF NOT EXISTS doctor_patient_access (
   id SERIAL PRIMARY KEY,
   doctor_wallet VARCHAR(42) NOT NULL,
   patient_wallet VARCHAR(42) NOT NULL,
-  doctor_hh_number VARCHAR(10) NOT NULL,
-  patient_hh_number VARCHAR(10) NOT NULL,
+  doctor_hh_number BIGINT NOT NULL,
+  patient_hh_number BIGINT NOT NULL,
   granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   granted_by VARCHAR(42) NOT NULL,
   revoked_at TIMESTAMP,
   is_active BOOLEAN DEFAULT true,
-  UNIQUE(doctor_hh_number, patient_hh_number)
+  UNIQUE(doctor_hh_number, patient_hh_number),
+  CONSTRAINT fk_doctor_wallet FOREIGN KEY (doctor_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE,
+  CONSTRAINT fk_patient_wallet FOREIGN KEY (patient_wallet) REFERENCES users(wallet_address) ON DELETE CASCADE
 );
 
 -- Notifications
@@ -262,6 +264,7 @@ CREATE INDEX IF NOT EXISTS idx_diagnostic_profiles_hh ON diagnostic_profiles(hh_
 CREATE INDEX IF NOT EXISTS idx_fl_models_disease ON fl_models(disease);
 CREATE INDEX IF NOT EXISTS idx_fl_rounds_model_id ON fl_rounds(model_id);
 CREATE INDEX IF NOT EXISTS idx_record_searchable_text ON record_index USING gin(to_tsvector('english', searchable_text));
+CREATE INDEX IF NOT EXISTS idx_dpa_active ON doctor_patient_access(doctor_hh_number, patient_hh_number) WHERE is_active = true;
 
 -- ============================================
 -- VIEWS

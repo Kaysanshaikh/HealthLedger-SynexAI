@@ -1,4 +1,5 @@
 const { ethers } = require("ethers");
+const jwt = require("jsonwebtoken");
 const healthLedgerService = require("../services/healthLedgerService");
 const db = require("../services/databaseService");
 
@@ -76,9 +77,19 @@ exports.login = async (req, res) => {
       role: normalizedRole,
     };
 
-    // Generate a simple token (in production, use JWT with proper signing)
-    const token = process.env.JWT || `hl_token_${Date.now()}_${walletAddress.substring(0, 10)}`;
-    console.log("✅ Login successful, returning token and user");
+    // Generate a secure JWT
+    const token = jwt.sign(
+      {
+        id: userRow.id,
+        hhNumber: userRow.hh_number,
+        walletAddress: userRow.wallet_address,
+        role: userRow.role
+      },
+      process.env.JWT_SECRET || 'hl_fallback_secret',
+      { expiresIn: '24h' }
+    );
+
+    console.log("✅ Login successful, returning JWT and user");
 
     return res.json({ token, user });
   } catch (error) {

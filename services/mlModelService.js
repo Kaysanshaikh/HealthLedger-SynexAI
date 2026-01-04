@@ -1,6 +1,7 @@
 const { PythonShell } = require("python-shell");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const pinataService = require("./pinataService");
 
 /**
@@ -260,30 +261,82 @@ function calculateModelDistance(model1, model2) {
 // ============================================
 
 /**
- * Encrypt model weights before IPFS upload
- * @param {Object} modelWeights - Model weights
- * @param {string} key - Encryption key (optional)
- * @returns {Buffer} Encrypted model
+ * Encrypt data before IPFS upload using AES-256-GCM
+ * @param {any} data - Data to encrypt
+ * @returns {string} Base64 encoded JSON containing ciphertext, iv, and tag
  */
-function encryptModelWeights(modelWeights, key = null) {
-    // Simplified: In production, use AES-256 encryption
-    const modelString = JSON.stringify(modelWeights);
-    const buffer = Buffer.from(modelString, 'utf8');
+function encryptData(data) {
+    const keyString = process.env.FL_ENCRYPTION_KEY;
+    if (!keyString) {
+        throw new Error("FL_ENCRYPTION_KEY not set in environment");
+    }
 
-    // TODO: Implement actual encryption
-    return buffer;
+    // Convert key from base64 or treat as raw string (ensure 32 bytes)
+    let key;
+    try {
+        key = Buffer.from(keyString, 'base64');
+        if (key.length !== 32) throw new Error("Key must be 32 bytes");
+    } catch {
+        // Fallback for simple string keys (not recommended for production)
+        key = crypto.createHash('sha256').update(keyString).digest();
+    }
+
+    const iv = crypto.randomBytes(12); // GCM standard IV length
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+
+    const isBuffer = Buffer.isBuffer(data);
+    const payload = isBuffer ? data.toString('base64') : JSON.stringify(data);
+
+    let encrypted = cipher.update(payload, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    const tag = cipher.getAuthTag().toString('hex');
+
+    return JSON.stringify({
+        iv: iv.toString('hex'),
+        content: encrypted,
+        tag: tag,
+        isBuffer: isBuffer
+    });
 }
 
 /**
- * Decrypt model weights after IPFS download
- * @param {Buffer} encryptedModel - Encrypted model
- * @param {string} key - Decryption key (optional)
- * @returns {Object} Decrypted model weights
+ * Decrypt data after IPFS download
+ * @param {string} encryptedData - Stringified JSON containing ciphertext, iv, and tag
+ * @returns {any} Decrypted data
  */
-function decryptModelWeights(encryptedModel, key = null) {
-    // Simplified: In production, use AES-256 decryption
-    const modelString = encryptedModel.toString('utf8');
-    return JSON.parse(modelString);
+function decryptData(encryptedData) {
+    const keyString = process.env.FL_ENCRYPTION_KEY;
+    if (!keyString) {
+        throw new Error("FL_ENCRYPTION_KEY not set in environment");
+    }
+
+    // Handle key processing consistently
+    let key;
+    try {
+        key = Buffer.from(keyString, 'base64');
+        if (key.length !== 32) throw new Error("Key must be 32 bytes");
+    } catch {
+        key = crypto.createHash('sha256').update(keyString).digest();
+    }
+
+    const { iv, content, tag, isBuffer } = JSON.parse(encryptedData);
+
+    const decipher = crypto.createDecipheriv(
+        'aes-256-gcm',
+        key,
+        Buffer.from(iv, 'hex')
+    );
+
+    decipher.setAuthTag(Buffer.from(tag, 'hex'));
+
+    let decrypted = decipher.update(content, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    if (isBuffer) {
+        return Buffer.from(decrypted, 'base64');
+    }
+    return JSON.parse(decrypted);
 }
 
 /**
@@ -296,7 +349,7 @@ async function uploadModelToIPFS(model, modelId) {
     try {
         console.log("📤 Uploading model to IPFS...");
 
-        const encrypted = encryptModelWeights(model.modelWeights);
+        const encrypted = encryptData(model.modelWeights);
         const metadata = {
             modelId,
             accuracy: model.accuracy,
@@ -305,7 +358,7 @@ async function uploadModelToIPFS(model, modelId) {
         };
 
         const result = await pinataService.uploadJSON({
-            model: encrypted.toString('base64'),
+            model: encrypted,
             metadata
         });
 
@@ -328,8 +381,7 @@ async function downloadModelFromIPFS(cid) {
         console.log("📥 Downloading model from IPFS...");
 
         const data = await pinataService.retrieveJSON(cid);
-        const encrypted = Buffer.from(data.model, 'base64');
-        const modelWeights = decryptModelWeights(encrypted);
+        const modelWeights = decryptData(data.model);
 
         return {
             modelWeights,
@@ -402,8 +454,8 @@ module.exports = {
     calculateModelDistance,
 
     // Encryption
-    encryptModelWeights,
-    decryptModelWeights,
+    encryptData,
+    decryptData,
 
     // IPFS
     uploadModelToIPFS,

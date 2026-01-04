@@ -49,12 +49,22 @@ class PinataService {
         throw new Error(`File size (${fileSizeInMB.toFixed(2)}MB) exceeds 1MB limit`);
       }
 
-      // Validate file type
-      const allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
-      const fileExtension = path.extname(fileName).toLowerCase();
+      // 🛡️ SECURITY: Deep Validation
+      // Ensure only authorized clinical file types are processed
+      const clinicalExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+      let fileExtension = path.extname(fileName).toLowerCase();
+      let underlyingExtension = fileExtension;
 
-      if (!allowedExtensions.includes(fileExtension)) {
-        throw new Error(`File type ${fileExtension} not allowed. Allowed types: ${allowedExtensions.join(', ')}`);
+      // Handle .encrypted files by checking the extension *before* the .encrypted suffix
+      if (fileExtension === '.encrypted') {
+        const nameWithoutEncrypted = fileName.slice(0, -10); // Strip '.encrypted'
+        underlyingExtension = path.extname(nameWithoutEncrypted).toLowerCase();
+        console.log(`🔒 Deep Validation: Detected .encrypted file. Underlying type: ${underlyingExtension}`);
+      }
+
+      if (!clinicalExtensions.includes(underlyingExtension)) {
+        console.error(`🚨 SECURITY REJECTION: Unauthorized file type ${underlyingExtension} (Full name: ${fileName})`);
+        throw new Error(`File type ${underlyingExtension} not allowed. Clinical files must be: ${clinicalExtensions.join(', ')}`);
       }
 
       const formData = new FormData();

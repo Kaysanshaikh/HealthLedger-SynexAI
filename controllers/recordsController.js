@@ -3,6 +3,7 @@ const db = require("../services/databaseService");
 const validation = require("../utils/validation");
 const { query } = require("../config/database");
 const pinataService = require("../services/pinataService");
+const mlModelService = require("../services/mlModelService");
 
 exports.create = async (req, res) => {
   try {
@@ -137,27 +138,46 @@ exports.get = async (req, res) => {
 exports.getPatientRecords = async (req, res) => {
   try {
     const { hhNumber } = req.params;
+    const user = req.user; // Set by authMiddleware
 
     console.log("📋 Fetching all records for patient:", hhNumber);
 
-    // Get user by HH number
-    const user = await db.getUserByHHNumber(parseInt(hhNumber));
+    // 🛡️ SECURITY: Authorization Check
+    const isPatient = parseInt(user.hhNumber) === parseInt(hhNumber);
+    let hasAccess = isPatient;
 
-    if (!user) {
+    if (!hasAccess && user.role === 'doctor') {
+      const access = await query(
+        `SELECT is_active FROM doctor_patient_access 
+         WHERE doctor_hh_number = $1 AND patient_hh_number = $2 AND is_active = true`,
+        [parseInt(user.hhNumber), parseInt(hhNumber)]
+      );
+      hasAccess = access.rows.length > 0;
+    }
+
+    if (!hasAccess) {
+      console.error(`🚨 UNAUTHORIZED RECORD LISTING: User ${user.hhNumber} tried to list records for patient ${hhNumber}`);
+      return res.status(403).json({ error: "Access Denied. You do not have permission to view records for this patient." });
+    }
+
+    // Get user by HH number
+    const patientUser = await db.getUserByHHNumber(parseInt(hhNumber));
+
+    if (!patientUser) {
       return res.status(404).json({
         error: "No account found with this HH Number. Please check the number and try again.",
         records: []
       });
     }
 
-    // Get records from database - try both HH number and wallet address for backward compatibility
-    console.log(`🔍 Searching for records for patient HH ${hhNumber} with wallet ${user.wallet_address}`);
+    // Get records from database - use the PATIENT'S wallet address, not the requester's (which might be a doctor's)
+    console.log(`🔍 Searching for records for patient HH ${hhNumber} with wallet ${patientUser.wallet_address}`);
 
-    // Fetch records by both HH number and wallet address to ensure all records are retrieved
+    // Fetch records by both HH number and the verified patient wallet address
     const recordsByHH = await db.getRecordsByPatientHH(parseInt(hhNumber), 100);
     console.log(`📊 Found ${recordsByHH.length} records by HH number`);
 
-    const recordsByWallet = await db.getRecordsByPatient(user.wallet_address, 100);
+    const recordsByWallet = await db.getRecordsByPatient(patientUser.wallet_address, 100);
     console.log(`📊 Found ${recordsByWallet.length} records by wallet address`);
 
     // Combine and deduplicate records
@@ -169,29 +189,24 @@ exports.getPatientRecords = async (req, res) => {
 
     // SECURITY CHECK: Ensure records belong to this patient
     const filteredRecords = records.filter(record => {
-      // Primary check: HH numbers must match (handle both string and number types)
+      // Primary check: HH numbers must match
       const recordHH = parseInt(record.patient_hh_number);
       const expectedHH = parseInt(hhNumber);
       const hhMatches = recordHH === expectedHH;
 
-      // Secondary check: Wallet addresses must match (case-insensitive)
+      // Secondary check: Wallet addresses must match the PATIENT'S verified wallet
       const recordWallet = (record.patient_wallet || '').toLowerCase();
-      const expectedWallet = (user.wallet_address || '').toLowerCase();
+      const expectedWallet = (patientUser.wallet_address || '').toLowerCase();
       const walletMatches = recordWallet === expectedWallet;
 
       console.log(`🔍 Checking record ${record.record_id}:`);
-      console.log(`   Record HH: ${record.patient_hh_number} (type: ${typeof record.patient_hh_number})`);
-      console.log(`   Expected HH: ${hhNumber} (type: ${typeof hhNumber})`);
-      console.log(`   After parseInt - Record: ${recordHH}, Expected: ${expectedHH}`);
-      console.log(`   HH Matches: ${hhMatches}`);
-      console.log(`   Record Wallet: ${recordWallet}`);
-      console.log(`   Expected Wallet: ${expectedWallet}`);
-      console.log(`   Wallet Matches: ${walletMatches}`);
+      console.log(`   Record HH: ${record.patient_hh_number}, Expected HH: ${hhNumber} -> Matches: ${hhMatches}`);
+      console.log(`   Record Wallet: ${recordWallet}, Expected Patient Wallet: ${expectedWallet} -> Matches: ${walletMatches}`);
 
-      // STRICT SECURITY: Record belongs to patient ONLY if BOTH HH numbers AND wallet addresses match
-      // This prevents cross-contamination of records between patients
-      const belongsToPatient = hhMatches && walletMatches;
-      console.log(`   Final Result (STRICT - both must match): ${belongsToPatient}`);
+      // SECURITY: A record is valid if it matches the HH number OR the verified wallet address
+      // (This handles legacy records and wallet migrations)
+      const belongsToPatient = hhMatches || walletMatches;
+      console.log(`   Final Result: ${belongsToPatient}`);
 
       if (!belongsToPatient) {
         console.error(`🚨 SECURITY ALERT: Record ${record.record_id} does not belong to patient!`);
@@ -619,15 +634,20 @@ exports.uploadFile = async (req, res) => {
       skipRecordCreation: skipRecordCreation === 'true'
     });
 
-    // Upload file to Pinata IPFS
+    // 🛡️ SECURITY: Encrypt the file buffer before uploading to IPFS
+    const encryptedData = mlModelService.encryptData(req.file.buffer);
+    const encryptedBuffer = Buffer.from(encryptedData, 'utf8');
+
+    // Upload encrypted JSON to Pinata IPFS
     const uploadResult = await pinataService.uploadFile(
-      req.file.buffer,
-      req.file.originalname,
+      encryptedBuffer,
+      `${req.file.originalname}.encrypted`,
       {
         patientHHNumber: patientHHNumber,
         recordType: recordType || 'medical-record',
         description: description || '',
-        uploadedBy: req.body.uploaderHHNumber || patientHHNumber
+        uploadedBy: req.body.uploaderHHNumber || patientHHNumber,
+        isEncrypted: 'true'
       }
     );
 
@@ -769,11 +789,43 @@ exports.retrieveFile = async (req, res) => {
       `);
     }
 
-    // Get file from IPFS
-    const fileBuffer = await pinataService.retrieveFile(cid);
-
-    // Get file info from database if available
+    // 🛡️ SECURITY: Fetch record from DB to verify ownership/access
     const record = await db.getRecordByCID(cid);
+    if (!record) {
+      return res.status(404).json({ error: "Record not found in database" });
+    }
+
+    // Authorization check: User must be patient OR authorized doctor
+    const user = req.user; // Set by authMiddleware
+    const isPatient = parseInt(user.hhNumber) === parseInt(record.patient_hh_number);
+
+    let hasAccess = isPatient;
+    if (!hasAccess && user.role === 'doctor') {
+      const access = await query(
+        `SELECT is_active FROM doctor_patient_access 
+         WHERE doctor_hh_number = $1 AND patient_hh_number = $2 AND is_active = true`,
+        [parseInt(user.hhNumber), parseInt(record.patient_hh_number)]
+      );
+      hasAccess = access.rows.length > 0;
+    }
+
+    if (!hasAccess) {
+      console.error(`🚨 UNAUTHORIZED ACCESS ATTEMPT: User ${user.hhNumber} tried to access record ${record.record_id}`);
+      return res.status(403).json({ error: "Access Denied. You do not have permission to view this medical record." });
+    }
+
+    // Get file from IPFS
+    const encryptedBuffer = await pinataService.retrieveFile(cid);
+    const encryptedData = encryptedBuffer.toString('utf8');
+
+    // Decrypt file
+    let fileBuffer;
+    try {
+      fileBuffer = mlModelService.decryptData(encryptedData);
+    } catch (decryptError) {
+      console.warn("⚠️ Decryption failed, serving as raw (legacy file?)");
+      fileBuffer = encryptedBuffer;
+    }
 
     let fileName = 'medical-record';
     let contentType = 'application/octet-stream';
@@ -789,7 +841,7 @@ exports.retrieveFile = async (req, res) => {
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
     res.setHeader('Content-Length', fileBuffer.length);
 
-    // Send file
+    // Send decrypted file
     res.send(fileBuffer);
 
   } catch (error) {

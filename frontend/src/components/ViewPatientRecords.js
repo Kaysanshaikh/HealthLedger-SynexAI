@@ -18,7 +18,7 @@ const RecordDetail = ({ label, value, isCid = false }) => (
 function ViewPatientRecords() {
   const { hhNumber } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token: authToken } = useAuth();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -158,7 +158,7 @@ function ViewPatientRecords() {
                           // 🚨 DIRECT NAVIGATION: Links for viewing files must hit the backend port (5001) directly
                           // to bypass the React Router and allow the server to stream the file or placeholder.
                           const backendUrl = 'http://localhost:5001/api';
-                          window.open(`${backendUrl}/records/file/${record.ipfs_cid}`, '_blank');
+                          window.open(`${backendUrl}/records/file/${record.ipfs_cid}?token=${authToken}`, '_blank');
                         }}
                       >
                         View Document

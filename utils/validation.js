@@ -34,11 +34,11 @@ exports.isValidDOB = (dob) => {
   const date = new Date(dob);
   const now = new Date();
   const minDate = new Date('1900-01-01');
-  
-  return date instanceof Date && 
-         !isNaN(date) && 
-         date < now && 
-         date > minDate;
+
+  return date instanceof Date &&
+    !isNaN(date) &&
+    date < now &&
+    date > minDate;
 };
 
 // Validate blood group
@@ -139,6 +139,40 @@ exports.validateDoctorRegistration = (data) => {
   };
 };
 
+// Validate diagnostic center registration data
+exports.validateDiagnosticRegistration = (data) => {
+  const errors = [];
+
+  if (!data.name || data.name.trim().length < 2) {
+    errors.push('Center name must be at least 2 characters long');
+  }
+
+  if (!exports.isValidEmail(data.email)) {
+    errors.push('Invalid email address');
+  }
+
+  if (!exports.isValidWalletAddress(data.walletAddress)) {
+    errors.push('Invalid wallet address format');
+  }
+
+  if (!exports.isValidHHNumber(data.hhNumber)) {
+    errors.push('Invalid HH Number');
+  }
+
+  if (!data.location || data.location.trim().length < 5) {
+    errors.push('Location is required (at least 5 characters)');
+  }
+
+  if (!data.servicesOffered || data.servicesOffered.trim().length < 2) {
+    errors.push('Services offered is required');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
 // Get user-friendly error message
 exports.getUserFriendlyError = (error) => {
   const errorMessage = error.message || error.toString();
@@ -147,23 +181,23 @@ exports.getUserFriendlyError = (error) => {
   if (errorMessage.includes('already registered')) {
     return 'This HH Number is already registered. Please use a different number or login if this is your account.';
   }
-  
+
   if (errorMessage.includes('Can only register yourself')) {
     return 'You can only register using your own wallet address. Please connect your MetaMask wallet.';
   }
-  
+
   if (errorMessage.includes('insufficient funds')) {
     return 'Insufficient funds in your wallet. Please add some MATIC tokens for gas fees.';
   }
-  
+
   if (errorMessage.includes('user rejected') || errorMessage.includes('User denied')) {
     return 'Transaction was cancelled. Please try again when ready.';
   }
-  
+
   if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
     return 'Network error. Please check your internet connection and try again.';
   }
-  
+
   if (errorMessage.includes('nonce')) {
     return 'Transaction error. Please refresh the page and try again.';
   }
@@ -172,7 +206,7 @@ exports.getUserFriendlyError = (error) => {
   if (errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
     return 'This record already exists in the system.';
   }
-  
+
   if (errorMessage.includes('connection')) {
     return 'Database connection error. Please try again later.';
   }

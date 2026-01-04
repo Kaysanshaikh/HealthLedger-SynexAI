@@ -228,6 +228,17 @@ router.post("/rounds/submit", async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
+        // Validate modelWeights structure
+        if (typeof modelWeights !== 'object' || Array.isArray(modelWeights)) {
+            return res.status(400).json({ error: "Invalid modelWeights format. Expected an object." });
+        }
+
+        // Validate trainingMetrics
+        const { accuracy, loss, samplesTrained } = trainingMetrics;
+        if (typeof accuracy !== 'number' || typeof loss !== 'number' || typeof samplesTrained !== 'number') {
+            return res.status(400).json({ error: "Invalid trainingMetrics. Expected numbers for accuracy, loss, and samplesTrained." });
+        }
+
         // Generate ZK proof
         const proof = await zkProofService.generateProof(modelWeights, trainingMetrics);
 

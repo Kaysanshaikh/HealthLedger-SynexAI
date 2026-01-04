@@ -31,23 +31,23 @@ const upload = multer({
 });
 
 // File upload routes
-router.post("/upload", upload.single('file'), recordsController.uploadFile);
-router.get("/file/:cid", recordsController.retrieveFile);
-router.get("/file/:cid/url", recordsController.getFileUrl);
+router.post("/upload", authMiddleware, upload.single('file'), recordsController.uploadFile);
+router.get("/file/:cid", authMiddleware, recordsController.retrieveFile);
+router.get("/file/:cid/url", authMiddleware, recordsController.getFileUrl);
 
 // Existing routes
 router.post("/", authMiddleware, recordsController.create);
-router.post("/diagnostic", recordsController.createDiagnosticReport);
-router.post("/patient/:hhNumber/grant", recordsController.grantAccessByPatient);
-router.post("/patient/:hhNumber/revoke", recordsController.revokeAccessByPatient);
-router.get("/patient/:hhNumber/granted-doctors", recordsController.getGrantedDoctors);
-router.get("/patient/:hhNumber/all", recordsController.getPatientRecords);
-router.get("/diagnostic/:hhNumber/reports", recordsController.getDiagnosticReports);
-router.get("/:recordId", recordsController.get);
+router.post("/diagnostic", authMiddleware, recordsController.createDiagnosticReport);
+router.post("/patient/:hhNumber/grant", authMiddleware, recordsController.grantAccessByPatient);
+router.post("/patient/:hhNumber/revoke", authMiddleware, recordsController.revokeAccessByPatient);
+router.get("/patient/:hhNumber/granted-doctors", authMiddleware, recordsController.getGrantedDoctors);
+router.get("/patient/:hhNumber/all", authMiddleware, recordsController.getPatientRecords);
+router.get("/diagnostic/:hhNumber/reports", authMiddleware, recordsController.getDiagnosticReports);
+router.get("/:recordId", authMiddleware, recordsController.get);
 router.patch("/:recordId", authMiddleware, recordsController.update);
 router.post("/:recordId/access", authMiddleware, recordsController.grantAccess);
 router.delete("/:recordId/access", authMiddleware, recordsController.revokeAccess);
-router.get("/:recordId/access", recordsController.hasAccess);
+router.get("/:recordId/access", authMiddleware, recordsController.hasAccess);
 
 // Demo Intelligence Suite
 router.post("/seed-demo", recordsController.seedDemo);
