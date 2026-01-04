@@ -35,9 +35,9 @@ const LoginPage = () => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4"
+          className="text-4xl md:text-6xl font-black tracking-tighter mb-4 text-foreground pb-2 leading-tight"
         >
-          Collaborative AI Portal
+          Collaborative Portal
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: -20 }}

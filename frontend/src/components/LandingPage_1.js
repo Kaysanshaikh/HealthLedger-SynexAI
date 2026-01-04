@@ -33,7 +33,7 @@ function LandingPage() {
             <span>Next-Generation Privacy-Preserving AI</span>
           </motion.div>
           <motion.h1
-            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-primary via-foreground/80 to-foreground bg-clip-text text-transparent pb-4 leading-tight"
+            className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-foreground pb-4 leading-tight"
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}

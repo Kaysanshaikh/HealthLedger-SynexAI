@@ -69,7 +69,7 @@ const TeamPage = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-4xl md:text-5xl font-bold tracking-tight"
+            className="text-4xl md:text-6xl font-black tracking-tighter text-foreground pb-2 leading-tight"
           >
             Our Team
           </motion.h1>
