@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import client from '../api/client';
 import NavBarLogout from './NavBar_Logout';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { useAuth } from '../context/AuthContext';
 import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Trash2 } from 'lucide-react';
 
-const API_URL = '/api/fl';
+const API_URL = '/fl';
 
 function FLDashboard() {
     const navigate = useNavigate();
@@ -38,7 +38,7 @@ function FLDashboard() {
     const fetchModels = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API_URL}/models`);
+            const response = await client.get(`${API_URL}/models`);
             const modelsList = response.data.models || [];
             setModels(modelsList);
 
@@ -46,7 +46,7 @@ function FLDashboard() {
             const roundsMap = {};
             for (const model of modelsList) {
                 try {
-                    const roundRes = await axios.get(`${API_URL}/rounds/active/${model.model_id}`);
+                    const roundRes = await client.get(`${API_URL}/rounds/active/${model.model_id}`);
                     if (roundRes.data.activeRound) {
                         roundsMap[model.model_id] = roundRes.data.activeRound;
                     }
@@ -57,7 +57,7 @@ function FLDashboard() {
             setActiveRounds(roundsMap);
 
             // Fetch global FL stats
-            const statsRes = await axios.get(`${API_URL}/stats`);
+            const statsRes = await client.get(`${API_URL}/stats`);
             if (statsRes.data.success) {
                 setGlobalStats(statsRes.data.stats);
             }
@@ -72,7 +72,7 @@ function FLDashboard() {
         e.preventDefault();
         try {
             setLoading(true);
-            await axios.post(`${API_URL}/models`, newModel);
+            await client.post(`${API_URL}/models`, newModel);
             setShowCreateForm(false);
             setNewModel({ disease: 'diabetes', modelType: 'logistic_regression' });
             await fetchModels();
@@ -91,7 +91,7 @@ function FLDashboard() {
             console.log(`🚀 Initiating training round for model ${modelId}`);
 
             // Start a new round on blockchain and DB
-            const startRes = await axios.post(`${API_URL}/rounds/start`, { modelId });
+            const startRes = await client.post(`${API_URL}/rounds/start`, { modelId });
             const roundId = startRes.data.roundId;
 
             console.log(`✅ Round ${roundId} initiated successfully`);
@@ -116,7 +116,7 @@ function FLDashboard() {
             setTrainingModels(prev => ({ ...prev, [modelId]: true }));
             console.log(`🏁 Completing round ${roundId}...`);
 
-            await axios.post(`${API_URL}/rounds/complete`, { roundId });
+            await client.post(`${API_URL}/rounds/complete`, { roundId });
 
             alert(`✅ Success!\n\nRound ID ${roundId} (Model Round ${roundNumber}) has been completed and models have been aggregated.`);
             await fetchModels(); // Refresh to show updated status
@@ -134,7 +134,7 @@ function FLDashboard() {
 
         try {
             setLoading(true);
-            await axios.delete(`${API_URL}/models/${modelId}`);
+            await client.delete(`${API_URL}/models/${modelId}`);
             alert("✅ Model deleted successfully.");
             await fetchModels();
         } catch (err) {

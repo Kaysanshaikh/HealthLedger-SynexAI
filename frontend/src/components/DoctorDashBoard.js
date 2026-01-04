@@ -6,7 +6,6 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { User, Users, Brain } from 'lucide-react';
 import client from "../api/client";
-import FLManager from "./FLManager";
 
 const DoctorDashBoardPage = () => {
   const navigate = useNavigate();
@@ -77,8 +76,6 @@ const DoctorDashBoardPage = () => {
           </Card>
 
         </div>
-
-        <FLManager />
       </div>
     </div>
   );

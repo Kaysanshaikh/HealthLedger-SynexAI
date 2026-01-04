@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import client from '../api/client';
 import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Zap, FileText, Check, X, Trash2 } from 'lucide-react';
 
-const API_URL = '/api/fl';
+const API_URL = '/fl';
 
 const FLManager = () => {
+    const { user } = useAuth();
+    console.log('🏁 FLManager component mounted/updated, user:', {
+        role: user?.role,
+        hhNumber: user?.hhNumber,
+        wallet: user?.walletAddress
+    });
+
+
+
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -27,7 +36,7 @@ const FLManager = () => {
         avgAccuracy: 0,
         network: 'Polygon Amoy'
     });
-    const { user } = useAuth();
+
 
     const stats = useMemo(() => {
         return {
@@ -41,17 +50,20 @@ const FLManager = () => {
     }, [user?.walletAddress]); // Refetch when user changes
 
     const fetchModels = async () => {
+        console.log('🔄 fetchModels triggered for user:', user?.walletAddress);
         try {
             setLoading(true);
-            const response = await axios.get(`${API_URL}/models`);
+            const response = await client.get(`${API_URL}/models`);
+            console.log('📦 Models response:', response.data);
             const modelsList = response.data.models || [];
+            console.log(`✅ Loaded ${modelsList.length} models`);
             setModels(modelsList);
 
             // Fetch active rounds for each model
             const roundsMap = {};
             for (const model of modelsList) {
                 try {
-                    const roundRes = await axios.get(`${API_URL}/rounds/active/${model.model_id}`);
+                    const roundRes = await client.get(`${API_URL}/rounds/active/${model.model_id}`);
                     if (roundRes.data.activeRound) {
                         roundsMap[model.model_id] = roundRes.data.activeRound;
                     }
@@ -63,17 +75,55 @@ const FLManager = () => {
 
             // Fetch user contributions and records
             if (user?.walletAddress) {
-                const contribRes = await axios.get(`${API_URL}/contributions/${user.walletAddress}`);
+                console.log('👤 Fetching data for user:', {
+                    role: user.role,
+                    hhNumber: user.hhNumber,
+                    walletAddress: user.walletAddress
+                });
+
+                const contribRes = await client.get(`${API_URL}/contributions/${user.walletAddress}`);
                 setUserContributions(contribRes.data.contributions || []);
 
-                if (user.hhNumber) {
-                    const recordsRes = await axios.get(`/api/records/patient/${user.hhNumber}/all`);
-                    setUserRecords(recordsRes.data.records || []);
+                // Fetch records based on user role
+                // Note: Only patients and diagnostic centers can contribute their own records to FL
+                // Doctors can view patient records but don't own them for FL contribution
+                try {
+                    let recordsRes;
+                    if (user.role === 'patient' && user.hhNumber) {
+                        console.log('📋 Fetching patient records...');
+                        recordsRes = await client.get(`/records/patient/${user.hhNumber}/all`);
+                    } else if (user.role === 'diagnostic' && user.hhNumber) {
+                        console.log('📋 Fetching diagnostic center records...');
+                        recordsRes = await client.get(`/records/diagnostic/${user.hhNumber}/reports`);
+                    } else if (user.role === 'doctor') {
+                        console.log('ℹ️ Doctors cannot contribute to FL training (records belong to patients)');
+                        setUserRecords([]);
+                        return; // Skip the rest of record fetching
+                    } else {
+                        console.warn('⚠️ User role or hhNumber not found:', { role: user.role, hhNumber: user.hhNumber });
+                    }
+
+                    if (recordsRes) {
+                        const records = recordsRes.data.records || recordsRes.data.reports || [];
+                        console.log(`✅ Fetched ${records.length} records for FL training`);
+                        setUserRecords(records);
+                    } else {
+                        console.warn('⚠️ No records endpoint available for this user type');
+                        setUserRecords([]);
+                    }
+                } catch (recordErr) {
+                    console.error('❌ Failed to fetch records:', recordErr);
+                    console.error('Error details:', {
+                        message: recordErr.message,
+                        response: recordErr.response?.data,
+                        status: recordErr.response?.status
+                    });
+                    setUserRecords([]);
                 }
             }
 
             // Fetch global FL stats
-            const statsRes = await axios.get(`${API_URL}/stats`);
+            const statsRes = await client.get(`${API_URL}/stats`);
             if (statsRes.data.success) {
                 setGlobalStats(statsRes.data.stats);
             }
@@ -88,7 +138,7 @@ const FLManager = () => {
         e.preventDefault();
         try {
             setLoading(true);
-            await axios.post(`${API_URL}/models`, newModel);
+            await client.post(`${API_URL}/models`, newModel);
             setShowCreateForm(false);
             setNewModel({ disease: 'diabetes', modelType: 'logistic_regression' });
             await fetchModels();
@@ -126,27 +176,34 @@ const FLManager = () => {
         const category = (record.metadata?.testType || '').toLowerCase();
         const dis = (disease || '').toLowerCase();
 
-        // Relevancy Matrix: 3=High (Primary), 2=Medium (Correlation), 1=Low (Supplemental), 0=Blocked (Unlikely)
+        // Relevancy Matrix: 3=High (Primary), 2=Medium (Correlation), 1=Low (Supplemental)
         if (dis === 'cvd') {
             if (category === 'cardiovascular') return 3;
             if (category === 'lifestyle') return 2;
             if (category === 'metabolic') return 1;
-            return 0; // Genomic is blocked for CVD in this demo
+            return 1; // Allow other types as supplemental
         }
 
         if (dis === 'diabetes') {
             if (category === 'metabolic') return 3;
             if (category === 'lifestyle') return 2;
-            return 1; // Cardiovascular is supplemental
+            return 1; // Allow other types as supplemental
         }
 
         if (dis === 'cancer') {
             if (category === 'genomics') return 3;
             if (category === 'metabolic') return 2;
-            return 1; // Others are supplemental
+            return 1; // Allow other types as supplemental
         }
 
-        return 1; // Default low suitability for unknown disease types
+        if (dis === 'pneumonia') {
+            if (category === 'respiratory') return 3;
+            if (category === 'lifestyle') return 2;
+            if (category === 'cardiovascular') return 1;
+            return 1; // Allow other types as supplemental
+        }
+
+        return 1; // Default: allow all records as supplemental data
     };
 
     const sortedRecords = useMemo(() => {
@@ -156,13 +213,21 @@ const FLManager = () => {
 
         return userRecords
             .map(r => ({ ...r, score: getRelevancyScore(r, model.disease) }))
-            .filter(r => r.score > 0) // STRICT: Block unlikely ones
-            .sort((a, b) => b.score - a.score);
+            .sort((a, b) => b.score - a.score); // Sort by relevancy, but allow all records
     }, [userRecords, selectingForModel, models]);
 
     const handleStartTraining = async (modelId) => {
+        console.log('🎯 handleStartTraining called with modelId:', modelId);
+        console.log('📊 Current state:', {
+            selectedRecords: selectedRecords.length,
+            selectingForModel,
+            userHHNumber: user?.hhNumber,
+            userRole: user?.role
+        });
+
         // Show picker for ANY user if they haven't selected records yet
         if (selectedRecords.length === 0 && !selectingForModel) {
+            console.log('📋 Opening record selection modal...');
             setSelectingForModel(modelId);
             return;
         }
@@ -171,9 +236,11 @@ const FLManager = () => {
             setTrainingModels(prev => ({ ...prev, [modelId]: true }));
             setSelectingForModel(null);
 
+            console.log('🔍 Checking for active round...');
             // 1. Check for active round
-            const activeRes = await axios.get(`${API_URL}/rounds/active/${modelId}`);
+            const activeRes = await client.get(`${API_URL}/rounds/active/${modelId}`);
             const activeRound = activeRes.data.activeRound;
+            console.log('✅ Active round response:', activeRound);
 
             if (!activeRound) {
                 alert("⚠️ No active training round found for this model.");
@@ -181,6 +248,7 @@ const FLManager = () => {
             }
 
             const roundId = activeRound.round_id;
+            console.log(`🚀 Starting training for round ${roundId} with ${selectedRecords.length} records...`);
 
             // 2. Local Training (on selected records)
             // In a production app, this would use TensorFlow.js or similar ML library 
@@ -199,18 +267,25 @@ const FLManager = () => {
                 samplesTrained: selectedRecords.length
             };
 
+            console.log('📤 Submitting contribution...', { roundId, metrics });
             // 3. Submit contribution
-            await axios.post(`${API_URL}/rounds/submit`, {
+            await client.post(`${API_URL}/rounds/submit`, {
                 roundId,
                 modelWeights: weightsRes,
                 trainingMetrics: metrics
             });
 
+            console.log('✅ Contribution successful!');
             alert(`✅ Success!\n\nTraining completed on ${metrics.samplesTrained} health records.\nContributed to Round ID ${roundId}.`);
             setSelectedRecords([]); // Reset selection
             await fetchModels();
         } catch (err) {
-            console.error('Contribution failed:', err);
+            console.error('❌ Contribution failed:', err);
+            console.error('Error details:', {
+                message: err.message,
+                response: err.response?.data,
+                status: err.response?.status
+            });
             const errorMsg = err.response?.data?.error || err.message;
             alert(`❌ Contribution Failed\n\n${errorMsg}`);
         } finally {
@@ -221,7 +296,7 @@ const FLManager = () => {
     const handleCompleteRound = async (roundId) => {
         try {
             setLoading(true);
-            const res = await axios.post(`${API_URL}/rounds/complete`, { roundId });
+            const res = await client.post(`${API_URL}/rounds/complete`, { roundId });
             alert(`✅ Round ${roundId} completed and aggregated successfully!\nNew Avg Accuracy: ${(res.data.avgAccuracy * 100).toFixed(1)}%`);
             await fetchModels();
         } catch (err) {
@@ -238,7 +313,7 @@ const FLManager = () => {
 
         try {
             setLoading(true);
-            await axios.delete(`${API_URL}/models/${modelId}`);
+            await client.delete(`${API_URL}/models/${modelId}`);
             alert("✅ Model deleted successfully.");
             await fetchModels();
         } catch (err) {
@@ -251,6 +326,10 @@ const FLManager = () => {
     };
 
 
+    // Safety check: Doctors shouldn't see or access the FL Console
+    if (user?.role === 'doctor') {
+        return null;
+    }
 
     return (
         <section className="mt-12">
@@ -314,9 +393,24 @@ const FLManager = () => {
                         <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <FileText className="h-5 w-5 text-primary" />
-                                Select Records for Training
+                                Select Records for Training: {models.find(m => m.model_id === selectingForModel)?.disease.toUpperCase()}
                             </CardTitle>
                             <CardDescription>Choose the health records you want to use for local model training.</CardDescription>
+
+                            {/* Disease-Specific Guidance */}
+                            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1">📊 Best Record Types for This Model:</p>
+                                <p className="text-[10px] text-blue-700 dark:text-blue-300">
+                                    {(() => {
+                                        const disease = models.find(m => m.model_id === selectingForModel)?.disease?.toLowerCase();
+                                        if (disease === 'cvd') return '🔴 Cardiovascular tests are most valuable. Lifestyle and metabolic data also helps.';
+                                        if (disease === 'diabetes') return '🟢 Metabolic tests (glucose, HbA1c) are most valuable. Lifestyle data also helps.';
+                                        if (disease === 'cancer') return '🟣 Genomic tests are most valuable. Metabolic data also helps.';
+                                        if (disease === 'pneumonia') return '🫁 Respiratory tests (lung function, X-rays) are most valuable. Lifestyle data also helps.';
+                                        return '📋 All clinical records can contribute to this model.';
+                                    })()}
+                                </p>
+                            </div>
                         </div>
                         <div className="flex items-center gap-2">
                             {userRecords.length > 0 && (
@@ -349,8 +443,7 @@ const FLManager = () => {
                                         record,
                                         score: getRelevancyScore(record, models.find(m => m.model_id === selectingForModel)?.disease)
                                     }))
-                                    .filter(item => item.score > 0) // STRICT: Remove unlikely records
-                                    .sort((a, b) => b.score - a.score)
+                                    .sort((a, b) => b.score - a.score) // Sort by relevancy, show all records
                                     .map(({ record, score }) => (
                                         <div
                                             key={record.record_id}
@@ -409,7 +502,7 @@ const FLManager = () => {
 
                             {selectedRecords.length === 0 && (
                                 <div className="p-2 border border-yellow-500/20 bg-yellow-500/5 rounded text-[10px] text-yellow-700 leading-tight">
-                                    ⚠️ No suitable records selected. You must select clinically relevant data or use the simulation fallback.
+                                    ⚠️ No records selected. Select at least one clinical record to begin training.
                                 </div>
                             )}
 

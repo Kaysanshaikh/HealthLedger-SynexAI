@@ -28,11 +28,21 @@ import Footer from "./components/Footer";
 import FLDashboard from "./components/FLDashboard";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { isAuthenticated, user } = useAuth();
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    // Redirect to their respective dashboard if not authorized
+    if (user?.role === 'doctor') return <Navigate to={`/doctor/${user.hhNumber}`} replace />;
+    if (user?.role === 'patient') return <Navigate to={`/patient/${user.hhNumber}`} replace />;
+    if (user?.role === 'diagnostic') return <Navigate to={`/diagnostic/${user.hhNumber}`} replace />;
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 };
 
@@ -54,7 +64,7 @@ const RoutesWithProtection = () => (
     <Route
       path="/fl-dashboard"
       element={
-        <ProtectedRoute>
+        <ProtectedRoute allowedRoles={['patient', 'diagnostic', 'admin']}>
           <FLDashboard />
         </ProtectedRoute>
       }
