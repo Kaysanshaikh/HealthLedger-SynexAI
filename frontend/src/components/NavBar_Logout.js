@@ -32,7 +32,7 @@ const NavBarLogout = () => {
             onClick={() => navigate("/")}
           />
           <span
-            className="text-xl font-semibold cursor-pointer"
+            className="text-lg md:text-xl font-semibold cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] sm:max-w-none"
             onClick={() => navigate("/")}
           >
             HealthLedger SynexAI

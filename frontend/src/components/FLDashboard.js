@@ -241,11 +241,11 @@ function FLDashboard() {
                         <Brain className="h-24 w-24 text-primary animate-pulse" />
                     </div>
                     <div className="relative z-10">
-                        <h1 className="text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3 pb-2 leading-tight">
+                        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3 pb-2 leading-tight">
                             <Brain className="h-10 w-10 text-primary" />
-                            SynexAI Models
+                            HealthLedger SynexAI
                         </h1>
-                        <p className="text-muted-foreground text-lg font-medium mt-2">Manage and monitor global intelligence nodes across the SynexAI network.</p>
+                        <p className="text-muted-foreground text-sm md:text-lg font-medium mt-2">Manage and monitor global intelligence nodes across the HealthLedger SynexAI network.</p>
                     </div>
                 </div>
 

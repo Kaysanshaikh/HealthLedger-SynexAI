@@ -23,7 +23,7 @@ const ChatBot = () => {
                                     <MessageSquare size={16} />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold tracking-tight">SynexAI Assistant</h3>
+                                    <h3 className="text-sm font-bold tracking-tight">HealthLedger SynexAI Assistant</h3>
                                     <div className="flex items-center gap-1.5">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                                         <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Online</span>
@@ -46,7 +46,7 @@ const ChatBot = () => {
                                 src="https://udify.app/chatbot/XupO2rSI33Xj67ZP"
                                 className="w-full h-full border-none"
                                 allow="microphone"
-                                title="SynexAI Assistant"
+                                title="HealthLedger SynexAI Assistant"
                             />
                         </div>
                     </motion.div>

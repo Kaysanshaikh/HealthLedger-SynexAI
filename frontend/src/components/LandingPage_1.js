@@ -33,12 +33,12 @@ function LandingPage() {
             <span>Next-Generation Privacy-Preserving AI</span>
           </motion.div>
           <motion.h1
-            className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-foreground pb-4 leading-tight"
+            className="text-4xl md:text-7xl font-black tracking-tighter mb-6 text-foreground pb-4 leading-tight"
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            Empowering Healthcare <br /> with SynexAI
+            Empowering Healthcare <br className="hidden md:block" /> with HealthLedger SynexAI
           </motion.h1>
           <motion.p
             className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
@@ -138,6 +138,9 @@ function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Decorative Padding for Mobile Chatbot */}
+      <div className="h-20 md:hidden" />
     </div>
   );
 }

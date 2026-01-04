@@ -52,18 +52,18 @@ const AboutUs = () => {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-black tracking-tighter mb-6 pb-2 leading-tight"
+            className="text-4xl md:text-7xl font-black tracking-tighter mb-6 pb-2 leading-tight"
           >
-            The Future of SynexAI
+            The Future of HealthLedger SynexAI
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl text-muted-foreground mt-2 max-w-3xl mx-auto leading-relaxed"
+            className="text-lg md:text-xl text-muted-foreground mt-2 max-w-3xl mx-auto leading-relaxed"
           >
-            SynexAI (Synapse + Nexus + AI) is more than a platform. It's a decentralized nervous system for global healthcare intelligence, where data remains private but knowledge flows freely.
+            HealthLedger SynexAI (Synapse + Nexus + AI) is more than a platform. It's a decentralized nervous system for global healthcare intelligence, where data remains private but knowledge flows freely.
           </motion.p>
         </div>
       </div>
@@ -143,8 +143,8 @@ const AboutUs = () => {
           <div className="absolute top-0 right-0 p-8 opacity-5">
             <Globe size={300} className="animate-spin-slow" />
           </div>
-          <h2 className="text-3xl font-bold mb-4 relative z-10">Ready to join the SynexAI network?</h2>
-          <p className="text-muted-foreground mb-8 max-w-xl mx-auto relative z-10">Be part of the decentralized revolution in medical intelligence. Secure your node and start contributing to global breakthroughs.</p>
+          <h2 className="text-2xl md:text-3xl font-bold mb-4 relative z-10">Ready to join the network?</h2>
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto relative z-10">Be part of the decentralized revolution in medical intelligence with HealthLedger SynexAI. Secure your node and start contributing to global breakthroughs.</p>
           <footer className="relative z-10">
             <p className="text-muted-foreground">Inquiries & Partnerships: <a href="mailto:support@healthledgersynexai.com" className="text-primary font-semibold hover:underline">support@healthledgersynexai.com</a></p>
           </footer>
