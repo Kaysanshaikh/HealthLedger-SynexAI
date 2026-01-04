@@ -9,9 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: healthledger-db
-          property: connectionString
+        sync: false # Set manually using your Neon Connection String
       - key: PORT
         value: 5001
       - key: JWT_SECRET
@@ -28,9 +26,3 @@ services:
       - key: PINATA_SECRET
         sync: false # Set manually in Render Dashboard
     autoDeploy: true
-
-databases:
-  - name: healthledger-db
-    plan: free
-    databaseName: healthledger
-    user: admin
