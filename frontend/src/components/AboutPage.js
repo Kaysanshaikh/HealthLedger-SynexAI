@@ -52,7 +52,7 @@ const AboutUs = () => {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6"
+            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 pb-2 leading-tight"
           >
             The Future of <span className="bg-gradient-to-r from-primary via-blue-500 to-indigo-500 bg-clip-text text-transparent">SynexAI</span>
           </motion.h1>

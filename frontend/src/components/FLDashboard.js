@@ -241,7 +241,7 @@ function FLDashboard() {
                         <Brain className="h-24 w-24 text-primary animate-pulse" />
                     </div>
                     <div className="relative z-10">
-                        <h1 className="text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+                        <h1 className="text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3 pb-2 leading-tight">
                             <Brain className="h-10 w-10 text-primary" />
                             SynexAI Models
                         </h1>
