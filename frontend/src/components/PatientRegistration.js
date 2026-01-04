@@ -166,10 +166,14 @@ const PatientRegistry = () => {
     }
   };
 
+  useEffect(() => {
+    console.log("PatientRegistry mounted");
+  }, []);
+
   return (
     <div className="bg-background min-h-screen">
       <NavBar />
-      <div className="container mx-auto p-4 md:p-8 flex items-center justify-center">
+      <div className="container mx-auto py-12 px-4 flex flex-col items-center justify-start">
         <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">Patient Registration</CardTitle>

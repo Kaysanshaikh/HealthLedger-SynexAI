@@ -37,15 +37,8 @@ app.use("/api/search", searchRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/fl", flRouter);
 
-// ✅ Serve React frontend
-const frontendPath = path.join(__dirname, "frontend", "build");
-app.use(express.static(frontendPath));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"));
-});
-
 const port = process.env.PORT || 5001;
 app.listen(port, () => {
-  console.log(`✅ HealthLedger API + Frontend running on port ${port}`);
+  console.log(`🚀 HealthLedger API Gateway running on port ${port}`);
+  console.log(`👉 API Base Path: http://localhost:${port}/api`);
 });

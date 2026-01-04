@@ -6,13 +6,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { User, Stethoscope, Beaker } from 'lucide-react';
 
 const RegisterCard = ({ icon, title, onClick }) => (
-  <Card className="w-full max-w-sm text-center transform hover:scale-105 transition-transform duration-300 cursor-pointer" onClick={onClick}>
+  <Card
+    className="w-full max-w-sm text-center transform hover:scale-105 transition-transform duration-300 cursor-pointer"
+    onClick={(e) => {
+      console.log(`Card clicked: ${title}`);
+      onClick(e);
+    }}
+  >
     <CardHeader>
       <div className="flex justify-center items-center mb-4">{icon}</div>
       <CardTitle>{title}</CardTitle>
     </CardHeader>
     <CardContent>
-      <Button variant="outline" className="w-full text-foreground border-foreground hover:bg-foreground hover:text-background">Proceed to Registration</Button>
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent duplicate calls if bubbling
+          console.log(`Button clicked: ${title}`);
+          onClick(e);
+        }}
+      >
+        Proceed to Registration
+      </Button>
     </CardContent>
   </Card>
 );

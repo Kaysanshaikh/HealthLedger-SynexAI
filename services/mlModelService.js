@@ -327,7 +327,7 @@ async function downloadModelFromIPFS(cid) {
     try {
         console.log("📥 Downloading model from IPFS...");
 
-        const data = await pinataService.getFromIPFS(cid);
+        const data = await pinataService.retrieveJSON(cid);
         const encrypted = Buffer.from(data.model, 'base64');
         const modelWeights = decryptModelWeights(encrypted);
 

@@ -19,7 +19,9 @@
     "build": "cd frontend && npm run build",
     "start": "node server.js",
     "start:api": "node server.js",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
     "dev:api": "nodemon server.js",
+    "dev:frontend": "cd frontend && npm run dev",
     "db:init": "node database/init.js",
     "db:init:fl": "psql -U postgres -f database/init_fl_local.sql",
     "db:test": "node database/testConnection.js",
@@ -36,10 +38,11 @@
   "type": "commonjs",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "hardhat": "^2.22.0",
-    "nodemon": "^3.1.0",
     "chai": "^4.3.10",
-    "mocha": "^10.2.0"
+    "concurrently": "^9.2.1",
+    "hardhat": "^2.22.0",
+    "mocha": "^10.2.0",
+    "nodemon": "^3.1.0"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",

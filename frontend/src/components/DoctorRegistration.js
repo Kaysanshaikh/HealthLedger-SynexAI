@@ -13,7 +13,7 @@ import { AlertTriangle } from "lucide-react";
 // Phone number validation for multiple countries
 const isValidPhoneNumber = (phone) => {
   const cleanPhone = phone.replace(/[\s-]/g, '');
-  
+
   // Common country code patterns
   const phonePatterns = [
     /^\+91[6-9]\d{9}$/,        // India: +91 followed by 10 digits starting with 6-9
@@ -32,7 +32,7 @@ const isValidPhoneNumber = (phone) => {
     /^\+65[6-9]\d{7}$/,        // Singapore: +65 followed by 8 digits
     /^\+60[1-9]\d{7,9}$/,      // Malaysia: +60 followed by 8-10 digits
   ];
-  
+
   return phonePatterns.some(pattern => pattern.test(cleanPhone));
 };
 
@@ -72,7 +72,7 @@ const DoctorRegistry = () => {
 
   const validateForm = () => {
     const errors = [];
-    
+
     // Name validation
     if (!formData.name.trim()) {
       errors.push("Full name is required");
@@ -81,46 +81,46 @@ const DoctorRegistry = () => {
     } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
       errors.push("Full name can only contain letters and spaces");
     }
-    
+
     // Email validation
     if (!formData.email.trim()) {
       errors.push("Email is required");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.push("Please enter a valid email address");
     }
-    
+
     // Phone number validation (International format with country codes)
     if (!formData.phoneNumber.trim()) {
       errors.push("Phone number is required");
     } else if (!isValidPhoneNumber(formData.phoneNumber)) {
       errors.push("Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901, +44 7123456789)");
     }
-    
+
     // HH Number validation
     if (!formData.hhNumber.trim()) {
       errors.push("HH Number is required");
     } else if (!/^\d{6}$/.test(formData.hhNumber)) {
       errors.push("HH Number must be exactly 6 digits");
     }
-    
+
     // License number validation
     if (!formData.licenseNumber.trim()) {
       errors.push("Medical license number is required");
     } else if (formData.licenseNumber.trim().length < 5) {
       errors.push("License number must be at least 5 characters");
     }
-    
+
     // Years of experience validation
     if (!formData.yearsOfExperience.trim()) {
       errors.push("Years of experience is required");
     } else if (!/^\d+$/.test(formData.yearsOfExperience) || parseInt(formData.yearsOfExperience) < 0 || parseInt(formData.yearsOfExperience) > 60) {
       errors.push("Years of experience must be a valid number between 0 and 60");
     }
-    
+
     // Required field validation
     if (!formData.specialization.trim()) errors.push("Specialization is required");
     if (!formData.hospital.trim()) errors.push("Hospital/Clinic name is required");
-    
+
     return errors;
   };
 
@@ -128,7 +128,7 @@ const DoctorRegistry = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    
+
     // Client-side validation
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
@@ -136,9 +136,9 @@ const DoctorRegistry = () => {
       setLoading(false);
       return;
     }
-    
+
     console.log("Submitting doctor registration:", formData);
-    
+
     try {
       const response = await client.post("/register/doctor", formData);
       console.log("Registration successful:", response.data);
@@ -146,7 +146,7 @@ const DoctorRegistry = () => {
       navigate("/login");
     } catch (err) {
       console.error("Registration error:", err);
-      
+
       // Handle different error types
       if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
         setError(err.response.data.errors.join(', '));
@@ -159,10 +159,14 @@ const DoctorRegistry = () => {
     }
   };
 
+  useEffect(() => {
+    console.log("DoctorRegistry mounted");
+  }, []);
+
   return (
     <div className="bg-background min-h-screen">
       <NavBar />
-      <div className="container mx-auto p-4 md:p-8 flex items-center justify-center">
+      <div className="container mx-auto py-12 px-4 flex flex-col items-center justify-start">
         <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">Doctor Registration</CardTitle>

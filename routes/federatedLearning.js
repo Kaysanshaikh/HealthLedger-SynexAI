@@ -18,6 +18,18 @@ router.post("/models", async (req, res) => {
             return res.status(400).json({ error: "Disease and modelType required" });
         }
 
+        // Check for existing active model with same disease and type
+        const existing = await db.query(
+            `SELECT * FROM fl_models WHERE disease = $1 AND model_type = $2 AND (status != 'deleted' OR status IS NULL)`,
+            [disease, modelType]
+        );
+
+        if (existing.rows.length > 0) {
+            return res.status(400).json({
+                error: `A model for ${disease} using ${modelType} already exists. Please delete the existing one first if you wish to recreate it.`
+            });
+        }
+
         // Create model on blockchain
         const modelId = await flService.createFLModel(disease, modelType);
 
@@ -45,7 +57,7 @@ router.post("/models", async (req, res) => {
 router.get("/models", async (req, res) => {
     try {
         const result = await db.query(
-            `SELECT * FROM fl_models ORDER BY created_at DESC`
+            `SELECT * FROM fl_models WHERE status != 'deleted' OR status IS NULL ORDER BY created_at DESC`
         );
 
         res.json({
@@ -59,6 +71,35 @@ router.get("/models", async (req, res) => {
     }
 });
 
+// Delete model (Admin only)
+router.delete("/models/:modelId", async (req, res) => {
+    try {
+        const { modelId } = req.params;
+
+        // 1. Deactivate on blockchain
+        try {
+            await flService.pauseModel(modelId);
+        } catch (bcError) {
+            console.warn("Blockchain pause failed (might already be paused or not exist):", bcError.message);
+            // We continue to update the database even if blockchain fails
+            // to ensure the UI stays in sync with the user's intent
+        }
+
+        // 2. Update database status
+        await db.deleteFLModel(modelId);
+
+        res.json({
+            success: true,
+            message: "Model deleted successfully",
+            modelId
+        });
+
+    } catch (error) {
+        console.error("Delete model error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get global FL statistics
 router.get("/stats", async (req, res) => {
     try {
@@ -68,7 +109,7 @@ router.get("/stats", async (req, res) => {
                 COUNT(*) as total_models,
                 AVG(accuracy) as avg_accuracy
              FROM fl_models 
-             WHERE status = 'active'`
+             WHERE (status = 'active' OR status IS NULL) AND (status != 'deleted' OR status IS NULL)`
         );
 
         // 2. Get unique participants count from contributions
@@ -292,8 +333,9 @@ router.post("/rounds/aggregate", async (req, res) => {
             })
         );
 
-        // Perform FedAvg aggregation
-        const aggregatedModel = mlModelService.federatedAverage(modelUpdates);
+        // Perform Byzantine-robust aggregation (Krum)
+        // Defend against model poisoning attacks by selecting honest updates
+        const aggregatedModel = mlModelService.byzantineRobustAggregation(modelUpdates, 1);
 
         // Upload aggregated model to IPFS
         const aggregatedIPFS = await mlModelService.uploadModelToIPFS(

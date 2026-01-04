@@ -360,6 +360,17 @@ async function setMinParticipants(minParticipants) {
     return await tx.wait();
 }
 
+/**
+ * Pause (deactivate) an FL model on the blockchain
+ * @param {string} modelId - Model ID
+ * @returns {Promise<Object>} Transaction receipt
+ */
+async function pauseModel(modelId) {
+    const { contract } = initialize();
+    const tx = await contract.pauseModel(modelId);
+    return await tx.wait();
+}
+
 // ============================================
 // EXPORTS
 // ============================================
@@ -395,5 +406,6 @@ module.exports = {
     distributeReward,
 
     // Config
-    setMinParticipants
+    setMinParticipants,
+    pauseModel
 };

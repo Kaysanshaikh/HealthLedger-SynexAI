@@ -14,25 +14,25 @@ const teamMembers = [
     name: "Shivam Prajapati",
     role: "Development Associate",
     contribution: "Shivam works closely with the lead developer to implement and optimize core platform features, ensuring smooth performance across the decentralized network.",
-    linkedin: "#",
+    linkedin: "https://www.linkedin.com/in/shivam-prajapati-78590b225/",
   },
   {
     name: "Priyanka Sawant",
     role: "Research & Documentation Lead",
     contribution: "Priyanka spearheads the research division, managing the complex documentation and medical compliance standards required for advanced AI in healthcare.",
-    linkedin: "#",
+    linkedin: "https://www.linkedin.com/in/priyanka-sawant-ba5409318/",
   },
   {
     name: "Tanmayee Salgaonkar",
     role: "Research Specialist",
     contribution: "Tanmayee focuses on synthesizing clinical research and contributing to the technical documentation that defines our Federated Learning models.",
-    linkedin: "#",
+    linkedin: "https://www.linkedin.com/in/tanmay-salgaonkar-939059210/",
   },
   {
     name: "Sharan Sherigar",
     role: "Research Associate",
     contribution: "Sharan supports the team in researching emerging medical AI trends and assisting in the formal documentation of the project's architecture.",
-    linkedin: "#",
+    linkedin: "https://www.linkedin.com/in/sharan-sherigar/",
   },
 ];
 

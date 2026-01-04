@@ -9,7 +9,7 @@ class PinataService {
     this.secretKey = process.env.PINATA_SECRET_KEY;
     this.baseUrl = 'https://api.pinata.cloud';
     this.gatewayUrl = 'https://gateway.pinata.cloud/ipfs';
-    
+
     if (!this.apiKey || !this.secretKey) {
       console.warn('⚠️ Pinata credentials not found in environment variables');
     }
@@ -52,7 +52,7 @@ class PinataService {
       // Validate file type
       const allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
       const fileExtension = path.extname(fileName).toLowerCase();
-      
+
       if (!allowedExtensions.includes(fileExtension)) {
         throw new Error(`File type ${fileExtension} not allowed. Allowed types: ${allowedExtensions.join(', ')}`);
       }
@@ -196,13 +196,13 @@ class PinataService {
 
       } catch (error) {
         console.error(`❌ Gateway ${gateway} failed:`, error.response?.status || error.message);
-        
+
         // If this is a rate limit error (429) and we have more gateways, try the next one
         if (error.response?.status === 429 && i < gateways.length - 1) {
           console.log(`⏳ Rate limited on ${gateway}, trying next gateway...`);
           continue;
         }
-        
+
         // If this is the last gateway, throw the error
         if (i === gateways.length - 1) {
           throw new Error(`Failed to retrieve from IPFS after trying ${gateways.length} gateways. Last error: ${error.message}`);
@@ -231,6 +231,14 @@ class PinataService {
       throw new Error(`Failed to retrieve JSON from IPFS: ${error.message}`);
     }
   }
+
+  /**
+   * Alias for retrieveJSON to maintain compatibility with Federated Learning bridge
+   */
+  async getFromIPFS(cid) {
+    return this.retrieveJSON(cid);
+  }
+
 
   /**
    * Unpin file from Pinata

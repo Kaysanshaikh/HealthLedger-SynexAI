@@ -120,12 +120,12 @@ h2 {
 
 /* Error and Success Messages */
 .error-box {
-  background: #f5f5f5;
-  border-left: 4px solid #333;
-  padding: 16px;
+  background-color: #fff1f0;
+  border: 1px solid #ffa39e;
+  color: #cf1322;
+  padding: 15px;
   border-radius: 8px;
-  margin-bottom: 24px;
-  color: #333;
+  margin-bottom: 25px;
 }
 
 .error-box ul {
@@ -138,13 +138,14 @@ h2 {
 }
 
 .success-box {
-  background: #f0f0f0;
-  border-left: 4px solid #000;
-  padding: 16px;
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #389e0d;
+  padding: 15px;
   border-radius: 8px;
-  margin-bottom: 24px;
-  color: #000;
-  font-weight: 500;
+  margin-bottom: 25px;
+  text-align: center;
+  font-weight: 600;
 }
 
 /* Form Styles */

@@ -491,7 +491,7 @@ exports.getGrantedDoctors = async (req, res) => {
 
 exports.createDiagnosticReport = async (req, res) => {
   try {
-    const { patientHHNumber, testName, testType, results, notes, ipfsCID, diagnosticHHNumber } = req.body;
+    const { patientHHNumber, testName, testType, results, notes, ipfsCID, diagnosticHHNumber, fileName, fileType, fileSize } = req.body;
 
     console.log("📋 Creating diagnostic report:", req.body);
 
@@ -511,6 +511,13 @@ exports.createDiagnosticReport = async (req, res) => {
       diagnosticHHNumber,
       createdAt: new Date().toISOString()
     };
+
+    // Add file metadata if provided
+    if (fileName) {
+      metadata.fileName = fileName;
+      metadata.fileType = fileType;
+      metadata.fileSize = fileSize;
+    }
 
     // Use IPFS CID if provided, otherwise use a placeholder
     const cid = ipfsCID || "QmPlaceholder";
@@ -599,7 +606,7 @@ exports.uploadFile = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const { patientHHNumber, recordType, description } = req.body;
+    const { patientHHNumber, recordType, description, skipRecordCreation } = req.body;
 
     if (!patientHHNumber) {
       return res.status(400).json({ error: "Patient HH Number is required" });
@@ -608,7 +615,8 @@ exports.uploadFile = async (req, res) => {
     console.log("📤 Uploading medical file:", {
       fileName: req.file.originalname,
       size: `${(req.file.size / 1024).toFixed(2)}KB`,
-      type: req.file.mimetype
+      type: req.file.mimetype,
+      skipRecordCreation: skipRecordCreation === 'true'
     });
 
     // Upload file to Pinata IPFS
@@ -624,6 +632,26 @@ exports.uploadFile = async (req, res) => {
     );
 
     console.log("✅ File uploaded to IPFS:", uploadResult.cid);
+
+    // If skipRecordCreation is true, only return the upload result without creating a record
+    // This is used when the diagnostic form will create the record with additional metadata
+    if (skipRecordCreation === 'true') {
+      console.log("⏭️ Skipping record creation (will be created by diagnostic form)");
+      return res.json({
+        success: true,
+        message: "File uploaded successfully",
+        ipfs: {
+          cid: uploadResult.cid,
+          url: uploadResult.url,
+          size: uploadResult.size
+        },
+        metadata: {
+          fileName: req.file.originalname,
+          fileType: uploadResult.fileType,
+          fileSize: req.file.size
+        }
+      });
+    }
 
     // Create record ID
     const recordId = `record-${patientHHNumber}-${Date.now()}`;
@@ -712,6 +740,35 @@ exports.retrieveFile = async (req, res) => {
 
     console.log("📥 Retrieving file from IPFS:", cid);
 
+    // 🔬 Handle Demo Records or Placeholders
+    if (cid.startsWith('QmDemo') || cid === 'QmPlaceholder') {
+      console.log("🧪 Serving placeholder for demo/empty record");
+      return res.status(200).send(`
+        <html>
+          <head>
+            <title>HealthLedger | Document Status</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f9fafb; color: #111827; }
+              .card { background: white; padding: 2.5rem; border-radius: 1rem; shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; text-align: center; max-width: 400px; }
+              .icon { font-size: 3rem; margin-bottom: 1rem; }
+              h2 { margin: 0 0 0.5rem 0; font-size: 1.25rem; }
+              p { font-size: 0.875rem; color: #6b7280; line-height: 1.5; margin-bottom: 1.5rem; }
+              button { background: #10b981; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600; width: 100%; }
+              button:hover { background: #059669; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="icon">🧪</div>
+              <h2>Research Demo Record</h2>
+              <p>This is a synthetic clinical record provisioned for research demonstration. In this demo, the raw medical file was not actually uploaded to IPFS.</p>
+              <button onclick="window.close()">Close Preview</button>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+
     // Get file from IPFS
     const fileBuffer = await pinataService.retrieveFile(cid);
 
@@ -798,8 +855,8 @@ exports.getDiagnosticReports = async (req, res) => {
       reports: reports
     });
   } catch (error) {
-    console.error("❌ Get diagnostic reports error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("❌ Failed to fetch diagnostic reports:", error);
+    return res.status(500).json({ error: "Unable to fetch reports. Please try again." });
   }
 };
 

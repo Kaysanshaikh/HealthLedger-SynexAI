@@ -33,15 +33,15 @@ function DiagnosticForm() {
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
-    
+
     if (selectedFiles.length === 0) return;
-    
+
     // Validate max 5 files
     if (selectedFiles.length > 5) {
       setError("You can upload a maximum of 5 files at once");
       return;
     }
-    
+
     const allowedTypes = [
       'application/pdf',
       'application/msword',
@@ -49,7 +49,7 @@ function DiagnosticForm() {
       'image/jpeg',
       'image/png'
     ];
-    
+
     // Validate each file
     for (const file of selectedFiles) {
       // Validate file size (1MB)
@@ -58,7 +58,7 @@ function DiagnosticForm() {
         setFiles([]);
         return;
       }
-      
+
       // Validate file type
       if (!allowedTypes.includes(file.type)) {
         setError(`File "${file.name}" has invalid type. Only PDF, DOC, DOCX, JPG, and PNG are allowed.`);
@@ -66,7 +66,7 @@ function DiagnosticForm() {
         return;
       }
     }
-    
+
     setFiles(selectedFiles);
     setError("");
     setUploadedFiles([]); // Reset uploaded files when new files are selected
@@ -75,13 +75,13 @@ function DiagnosticForm() {
   const removeFile = (indexToRemove) => {
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
     setFiles(updatedFiles);
-    
+
     // Reset file input if no files left
     if (updatedFiles.length === 0) {
       const fileInput = document.getElementById('fileUpload');
       if (fileInput) fileInput.value = '';
     }
-    
+
     // Also remove from uploaded files if it was uploaded
     const updatedUploadedFiles = uploadedFiles.filter((_, index) => index !== indexToRemove);
     setUploadedFiles(updatedUploadedFiles);
@@ -113,6 +113,7 @@ function DiagnosticForm() {
         uploadFormData.append('recordType', 'diagnostic-report');
         uploadFormData.append('description', `${formData.testName} - ${formData.testType}`);
         uploadFormData.append('uploaderHHNumber', hhNumber);
+        uploadFormData.append('skipRecordCreation', 'true'); // Don't create record yet
 
         console.log("📤 Uploading:", file.name);
 
@@ -126,9 +127,10 @@ function DiagnosticForm() {
           fileName: file.name,
           cid: response.data.ipfs.cid,
           url: response.data.ipfs.url,
-          recordId: response.data.recordId
+          fileType: response.data.metadata.fileType,
+          fileSize: response.data.metadata.fileSize
         });
-        
+
         console.log("✅ File uploaded:", file.name, response.data.ipfs.cid);
       }
 
@@ -141,9 +143,9 @@ function DiagnosticForm() {
         response: err.response?.data,
         status: err.response?.status
       });
-      
+
       let errorMessage = "Failed to upload files to IPFS";
-      
+
       if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (err.message.includes('Network Error')) {
@@ -151,7 +153,7 @@ function DiagnosticForm() {
       } else if (err.response?.status === 404) {
         errorMessage = "Upload endpoint not found. Please check server configuration.";
       }
-      
+
       setError(errorMessage);
       return [];
     } finally {
@@ -180,19 +182,27 @@ function DiagnosticForm() {
       // Use the first file's CID for the diagnostic report
       const ipfsCID = uploadResults.length > 0 ? uploadResults[0].cid : "";
 
+      // Include file metadata if files were uploaded
+      const fileMetadata = uploadResults.length > 0 ? {
+        fileName: uploadResults[0].fileName,
+        fileType: uploadResults[0].fileType,
+        fileSize: uploadResults[0].fileSize
+      } : {};
+
       console.log("📋 Creating diagnostic report:", formData);
       await client.post("/records/diagnostic", {
         ...formData,
         ipfsCID: ipfsCID,
-        diagnosticHHNumber: hhNumber
+        diagnosticHHNumber: hhNumber,
+        ...fileMetadata
       });
-      
+
       let successMsg = "Diagnostic report created successfully!";
       if (uploadResults.length > 0) {
         successMsg += ` ${uploadResults.length} file(s) uploaded to IPFS.`;
       }
       setSuccess(successMsg);
-      
+
       // Reset form
       setFormData({
         patientHHNumber: "",
@@ -203,11 +213,11 @@ function DiagnosticForm() {
       });
       setFiles([]);
       setUploadedFiles([]);
-      
+
       // Reset file input
       const fileInput = document.getElementById('fileUpload');
       if (fileInput) fileInput.value = '';
-      
+
     } catch (err) {
       console.error("❌ Failed to create report:", err);
       setError(err.response?.data?.error || "Failed to create diagnostic report. Please try again.");
@@ -232,10 +242,10 @@ function DiagnosticForm() {
         </header>
 
         {success && (
-          <Alert className="mb-6 border-foreground/20 bg-muted/50">
-            <CheckCircle className="h-4 w-4 text-foreground" />
-            <AlertTitle className="text-foreground">Success</AlertTitle>
-            <AlertDescription className="text-muted-foreground">{success}</AlertDescription>
+          <Alert className="mb-6 border-green-500 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Success</AlertTitle>
+            <AlertDescription className="text-green-700">{success}</AlertDescription>
           </Alert>
         )}
 
@@ -311,7 +321,7 @@ function DiagnosticForm() {
                       Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 1MB each, up to 5 files)
                     </p>
                     {!formData.patientHHNumber && files.length > 0 && (
-                      <p className="text-xs text-foreground font-bold">
+                      <p className="text-xs text-amber-600">
                         ⚠️ Please enter Patient HH Number before uploading files
                       </p>
                     )}
@@ -320,12 +330,12 @@ function DiagnosticForm() {
                         {files.map((file, index) => {
                           const isUploaded = uploadedFiles.some(uf => uf.fileName === file.name);
                           return (
-                            <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded border border-border">
-                              <File className="h-4 w-4 text-primary" />
+                            <div key={index} className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-800 rounded border">
+                              <File className="h-4 w-4 text-blue-600" />
                               <span className="text-sm font-medium">{file.name}</span>
                               <span className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(2)} KB)</span>
                               {isUploaded && (
-                                <span className="ml-auto text-xs text-foreground font-bold flex items-center gap-1">
+                                <span className="ml-auto text-xs text-green-600 flex items-center gap-1">
                                   <CheckCircle className="h-3 w-3" />
                                   Uploaded
                                 </span>
@@ -336,7 +346,7 @@ function DiagnosticForm() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeFile(index)}
-                                  className="ml-auto h-6 w-6 p-0 text-foreground hover:bg-muted"
+                                  className="ml-auto h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                                   title="Remove file"
                                 >
                                   <X className="h-3 w-3" />
@@ -361,8 +371,8 @@ function DiagnosticForm() {
                       </Button>
                     )}
                     {uploadedFiles.length > 0 && (
-                      <div className="text-sm text-foreground font-bold flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4 text-primary" />
+                      <div className="text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle className="h-4 w-4" />
                         {uploadedFiles.length} file(s) uploaded successfully to IPFS
                       </div>
                     )}

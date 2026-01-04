@@ -4,12 +4,14 @@ import axios from 'axios';
 import NavBarLogout from './NavBar_Logout';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Brain, Users, TrendingUp, Shield, Plus, RefreshCw, Activity } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Trash2 } from 'lucide-react';
 
 const API_URL = '/api/fl';
 
 function FLDashboard() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -98,7 +100,8 @@ function FLDashboard() {
             await fetchModels();
         } catch (err) {
             console.error('Failed to create model:', err);
-            alert("Model creation failed. Check console for details.");
+            const errorMsg = err.response?.data?.error || "Model creation failed. Check console for details.";
+            alert(`❌ ${errorMsg}`);
         } finally {
             setLoading(false);
         }
@@ -145,6 +148,23 @@ function FLDashboard() {
             alert(`❌ Failed to Complete Round\n\n${errorMsg}`);
         } finally {
             setTrainingModels(prev => ({ ...prev, [modelId]: false }));
+        }
+    };
+
+    const handleDeleteModel = async (modelId) => {
+        if (!window.confirm("Are you sure you want to delete this model? This will remove it from the research network.")) return;
+
+        try {
+            setLoading(true);
+            await axios.delete(`${API_URL}/models/${modelId}`);
+            alert("✅ Model deleted successfully.");
+            await fetchModels();
+        } catch (err) {
+            console.error('Failed to delete model:', err);
+            const errorMsg = err.response?.data?.error || err.message;
+            alert(`❌ Deletion Failed\n\n${errorMsg}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -212,7 +232,7 @@ function FLDashboard() {
                 {/* Action Buttons */}
                 <div className="flex gap-4 mb-8">
                     <Button onClick={() => setShowCreateForm(!showCreateForm)}>
-                        <Plus className="mr-2 h-4 w-4" />
+                        {showCreateForm ? <Minus className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
                         {showCreateForm ? 'Cancel' : 'Create New Model'}
                     </Button>
                     <Button variant="outline" onClick={fetchModels}>
@@ -275,7 +295,7 @@ function FLDashboard() {
                         <Activity className="h-5 w-5 text-primary animate-pulse" />
                         <div>
                             <p className="text-sm font-medium">Auto-Training Service</p>
-                            <p className="text-xs text-muted-foreground">Service status: <span className="text-foreground font-bold">ONLINE</span></p>
+                            <p className="text-xs text-muted-foreground">Service status: <span className="text-green-500">Online</span></p>
                         </div>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => setShowSimulationModal(true)}>
@@ -393,12 +413,24 @@ function FLDashboard() {
                                     <CardHeader className="pb-4">
                                         <div className="flex items-center justify-between">
                                             <CardTitle className="capitalize text-xl flex items-center gap-2">
-                                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                                                 {model.disease}
                                             </CardTitle>
-                                            <span className="px-2 py-1 text-[10px] font-bold uppercase rounded-md bg-primary/10 text-primary border border-primary/20">
-                                                {model.model_type.replace('_', ' ')}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="px-2 py-1 text-[10px] font-bold uppercase rounded-md bg-primary/10 text-primary border border-primary/20">
+                                                    {model.model_type.replace('_', ' ')}
+                                                </span>
+                                                {user?.role === 'admin' && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
+                                                        onClick={() => handleDeleteModel(model.model_id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="flex-grow">
@@ -470,19 +502,19 @@ function FLDashboard() {
                     <CardContent>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li className="flex items-center gap-2">
-                                <span className="font-bold text-foreground">✓</span>
+                                <span className="text-green-600 dark:text-green-400">✓</span>
                                 Zero-Knowledge Proofs for gradient privacy
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className="font-bold text-foreground">✓</span>
+                                <span className="text-green-600 dark:text-green-400">✓</span>
                                 Byzantine-robust aggregation (Krum)
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className="font-bold text-foreground">✓</span>
+                                <span className="text-green-600 dark:text-green-400">✓</span>
                                 Encrypted model storage on IPFS
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className="font-bold text-foreground">✓</span>
+                                <span className="text-green-600 dark:text-green-400">✓</span>
                                 On-chain proof verification
                             </li>
                         </ul>

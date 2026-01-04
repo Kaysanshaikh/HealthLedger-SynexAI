@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Brain, Users, TrendingUp, Shield, Plus, RefreshCw, Activity, Zap, FileText, Check, X } from 'lucide-react';
+import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Zap, FileText, Check, X, Trash2 } from 'lucide-react';
 
 const API_URL = '/api/fl';
 
@@ -95,7 +95,8 @@ const FLManager = () => {
             await fetchModels();
         } catch (err) {
             console.error('Failed to create model:', err);
-            alert("Model creation failed. Check console for details.");
+            const errorMsg = err.response?.data?.error || "Model creation failed. Check console for details.";
+            alert(`❌ ${errorMsg}`);
         } finally {
             setLoading(false);
         }
@@ -238,6 +239,23 @@ const FLManager = () => {
             console.error('Failed to complete round:', err);
             const errorMsg = err.response?.data?.error || err.message;
             alert(`❌ Round Completion Failed\n\n${errorMsg}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteModel = async (modelId) => {
+        if (!window.confirm("Are you sure you want to delete this model? This will remove it from the research network.")) return;
+
+        try {
+            setLoading(true);
+            await axios.delete(`${API_URL}/models/${modelId}`);
+            alert("✅ Model deleted successfully.");
+            await fetchModels();
+        } catch (err) {
+            console.error('Failed to delete model:', err);
+            const errorMsg = err.response?.data?.error || err.message;
+            alert(`❌ Deletion Failed\n\n${errorMsg}`);
         } finally {
             setLoading(false);
         }
@@ -429,17 +447,17 @@ const FLManager = () => {
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-medium">{record.metadata?.testName || 'Medical Record'}</p>
                                                         {score === 3 && (
-                                                            <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-bold uppercase rounded border border-primary/20">
+                                                            <span className="px-1.5 py-0.5 bg-yellow-500/10 text-yellow-600 text-[8px] font-bold uppercase rounded border border-yellow-500/20">
                                                                 Primary Data
                                                             </span>
                                                         )}
                                                         {score === 2 && (
-                                                            <span className="px-1.5 py-0.5 bg-muted text-muted-foreground text-[8px] font-bold uppercase rounded border border-border">
+                                                            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 text-[8px] font-bold uppercase rounded border border-blue-500/20">
                                                                 High Correlation
                                                             </span>
                                                         )}
                                                         {score === 1 && (
-                                                            <span className="px-1.5 py-0.5 border border-dashed border-border text-muted-foreground text-[8px] font-bold uppercase rounded">
+                                                            <span className="px-1.5 py-0.5 bg-gray-500/10 text-gray-500 text-[8px] font-bold uppercase rounded border border-gray-500/20">
                                                                 Supplemental
                                                             </span>
                                                         )}
@@ -462,14 +480,14 @@ const FLManager = () => {
                                 </div>
                                 {selectedRecords.length > 0 && (
                                     <div className="text-right">
-                                        <p className="text-xs font-bold text-foreground uppercase tracking-wider">Status</p>
-                                        <p className="text-[10px] font-bold text-foreground">VALIDATED</p>
+                                        <p className="text-xs font-bold text-green-600 uppercase tracking-wider">Status</p>
+                                        <p className="text-[10px] font-bold text-green-600">VALIDATED DATA</p>
                                     </div>
                                 )}
                             </div>
 
                             {selectedRecords.length === 0 && (
-                                <div className="p-2 border border-foreground/20 bg-muted/50 rounded text-[10px] text-muted-foreground leading-tight">
+                                <div className="p-2 border border-yellow-500/20 bg-yellow-500/5 rounded text-[10px] text-yellow-700 leading-tight">
                                     ⚠️ No suitable records selected. You must select clinically relevant data or use the simulation fallback.
                                 </div>
                             )}
@@ -482,7 +500,7 @@ const FLManager = () => {
                                 {userRecords.length === 0 ? (
                                     <Button
                                         onClick={() => handleStartTraining(selectingForModel)}
-                                        className="bg-foreground text-background hover:bg-foreground/90"
+                                        className="bg-amber-600 hover:bg-amber-700 text-white"
                                     >
                                         Run Synthetic Training (100-500 Samples)
                                     </Button>
@@ -503,7 +521,7 @@ const FLManager = () => {
             {user?.role === 'admin' && !selectingForModel && (
                 <div className="flex gap-4 mb-6">
                     <Button onClick={() => setShowCreateForm(!showCreateForm)}>
-                        <Plus className="mr-2 h-4 w-4" />
+                        {showCreateForm ? <Minus className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
                         {showCreateForm ? 'Cancel' : 'Propose New Model'}
                     </Button>
                     <Button variant="outline" size="icon" onClick={fetchModels}>
@@ -557,12 +575,24 @@ const FLManager = () => {
                                         <Activity className={`h-4 w-4 ${activeRound ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                                         {model.disease}
                                     </CardTitle>
-                                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded ${activeRound
-                                        ? 'bg-primary text-primary-foreground animate-pulse'
-                                        : 'bg-muted text-muted-foreground'
-                                        }`}>
-                                        {activeRound ? 'Training Active' : (model.status || 'Active')}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded ${activeRound
+                                            ? 'bg-primary text-primary-foreground animate-pulse'
+                                            : 'bg-muted text-muted-foreground'
+                                            }`}>
+                                            {activeRound ? 'Training Active' : (model.status || 'Active')}
+                                        </span>
+                                        {user?.role === 'admin' && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 text-muted-foreground hover:text-destructive transition-colors"
+                                                onClick={() => handleDeleteModel(model.model_id)}
+                                            >
+                                                <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                                 <CardDescription className="text-xs font-mono">{model.model_type}</CardDescription>
                             </CardHeader>
@@ -578,7 +608,7 @@ const FLManager = () => {
                                 {activeRound ? (
                                     <Button
                                         className={`w-full shadow-lg transition-all ${hasContributed
-                                            ? 'bg-muted text-muted-foreground border-border cursor-default'
+                                            ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-50 cursor-default'
                                             : 'bg-primary hover:bg-primary/90 shadow-primary/20'}`}
                                         onClick={() => handleStartTraining(model.model_id)}
                                         disabled={trainingModels[model.model_id] || hasContributed || selectingForModel}
@@ -592,7 +622,7 @@ const FLManager = () => {
                                             <div className="flex items-center gap-2">
                                                 {hasContributed ? (
                                                     <>
-                                                        <Shield className="h-4 w-4 text-primary fill-primary/20" />
+                                                        <Shield className="h-4 w-4 text-green-500 fill-green-500/20" />
                                                         <span>Already Contributed</span>
                                                     </>
                                                 ) : (

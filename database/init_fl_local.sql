@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS fl_models (
     accuracy DECIMAL(5,4),
     loss DECIMAL(10,6),
     total_participants INTEGER DEFAULT 0,
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed')),
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed', 'deleted')),
     created_by VARCHAR(42) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

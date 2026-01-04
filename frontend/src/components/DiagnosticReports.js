@@ -143,13 +143,16 @@ function DiagnosticReports() {
                     <ReportDetail label="Created At" value={new Date(report.created_at).toLocaleString()} />
                   </dl>
 
+
                   {report.ipfs_cid && report.ipfs_cid !== 'QmPlaceholder' && (
                     <div className="mt-6">
                       <Button
                         size="sm"
                         onClick={() => {
-                          const apiUrl = process.env.REACT_APP_API_URL || '/api';
-                          window.open(`${apiUrl}/records/file/${report.ipfs_cid}`, '_blank');
+                          // 🚨 DIRECT NAVIGATION: Links for viewing files must hit the backend port (5001) directly
+                          // to bypass the React Router and allow the server to stream the file or placeholder.
+                          const backendUrl = 'http://localhost:5001/api';
+                          window.open(`${backendUrl}/records/file/${report.ipfs_cid}`, '_blank');
                         }}
                       >
                         <Eye className="h-4 w-4 mr-2" />
@@ -181,7 +184,7 @@ function DiagnosticReports() {
         {!loading && reports.length === 0 && error && (
           <Card>
             <CardContent className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 mx-auto text-foreground mb-4" />
+              <AlertTriangle className="h-12 w-12 mx-auto text-red-500 mb-4" />
               <h3 className="text-lg font-semibold mb-2">Unable to Load Reports</h3>
               <p className="text-muted-foreground mb-4">
                 {error}

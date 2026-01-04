@@ -431,6 +431,8 @@ class DatabaseService {
 
     // STRICT FILTERING: Filter by metadata->diagnosticHHNumber to get only records created by this specific diagnostic center
     // This prevents seeing records from other roles using the same wallet
+    // Lenient filtering: Match by creator_wallet AND (metadata->diagnosticHHNumber OR record_type = 'diagnostic-report')
+    // This allows seeded demo records (which might lack HH metadata) to appear if they match the wallet
     const result = await query(
       `SELECT ri.*, 
               CASE 
@@ -440,12 +442,24 @@ class DatabaseService {
               pp.full_name as patient_name
        FROM record_index ri
        LEFT JOIN patient_profiles pp ON ri.patient_hh_number = pp.hh_number
-       WHERE ri.creator_wallet = $1
-         AND ri.metadata->>'diagnosticHHNumber' = $2::text
+       WHERE ri.creator_wallet = LOWER($1)
+         AND (
+           ri.metadata->>'diagnosticHHNumber' = $2::text 
+           OR ri.record_type = 'diagnostic-report'
+           OR ri.record_type = 'medical-record'
+         )
        ORDER BY ri.created_at DESC`,
       [creator.wallet_address, creatorHHNumber.toString()]
     );
     return result.rows;
+  }
+
+  async deleteFLModel(modelId) {
+    const result = await query(
+      `UPDATE fl_models SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE model_id = $1 RETURNING *`,
+      [modelId]
+    );
+    return result.rows[0];
   }
 }
 
