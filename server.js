@@ -37,8 +37,24 @@ app.use("/api/search", searchRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/fl", flRouter);
 
+// ✅ Serve static files in production
+if (process.env.NODE_ENV === "production" || process.env.RENDER) {
+  const buildPath = path.join(__dirname, "frontend", "build");
+  app.use(express.static(buildPath));
+
+  app.get("*", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.join(buildPath, "index.html"));
+    }
+  });
+}
+
 const port = process.env.PORT || 5001;
 app.listen(port, () => {
   console.log(`🚀 HealthLedger API Gateway running on port ${port}`);
-  console.log(`👉 API Base Path: http://localhost:${port}/api`);
+  if (process.env.NODE_ENV === "production") {
+    console.log(`🌐 Application Hub: http://localhost:${port}`);
+  } else {
+    console.log(`👉 API Base Path: http://localhost:${port}/api`);
+  }
 });
