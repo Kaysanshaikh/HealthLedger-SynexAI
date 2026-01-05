@@ -33,8 +33,8 @@ HealthLedger SynexAI is a production-ready federated learning system that enable
 
 ```bash
 # Clone repository
-git clone https://github.com/YOUR_USERNAME/healthledger-fl.git
-cd healthledger-fl
+git clone https://github.com/YOUR_USERNAME/HealthLedger-SynexAI.git
+cd HealthLedger-SynexAI
 
 # Install dependencies
 npm install
