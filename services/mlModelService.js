@@ -28,41 +28,42 @@ const MODEL_CACHE = new Map();
  */
 async function trainLocalModel(disease, patientData, globalModel = null, config = {}) {
     try {
-        console.log(`🏥 Training local ${disease} model...`);
-        console.log(`   Samples: ${patientData.length}`);
-
-        // Default config
-        const trainingConfig = {
-            epochs: config.epochs || 10,
-            batchSize: config.batchSize || 32,
-            learningRate: config.learningRate || 0.001,
-            ...config
-        };
+        console.log(`🏥 [PRODUCTION] Training local ${disease} model via Python Backend...`);
 
         // Prepare data for Python
         const inputData = {
             disease,
             data: patientData,
             globalModel: globalModel,
-            config: trainingConfig
+            config: {
+                max_iter: config.epochs || 1000,
+                C: config.C || 1.0,
+                ...config
+            }
         };
 
         // Call Python ML backend
         const result = await callPythonML("train_model.py", inputData);
 
-        console.log(`✅ Training complete - Accuracy: ${(result.accuracy * 100).toFixed(2)}%`);
+        if (result.error) {
+            console.error(`❌ ML Backend Error: ${result.error}`);
+            throw new Error(`Production Training Failed: ${result.error}`);
+        }
+
+        console.log(`✅ Training complete - Global Accuracy: ${(result.accuracy * 100).toFixed(2)}%`);
 
         return {
             modelWeights: result.weights,
             accuracy: result.accuracy,
             loss: result.loss,
-            samplesTrained: patientData.length,
+            samplesTrained: result.metrics?.samples || patientData.length,
             trainingTime: result.trainingTime,
             metrics: result.metrics
         };
 
     } catch (error) {
-        console.error("❌ Local training failed:", error.message);
+        console.error(`❌ CRITICAL: Local training failed for ${disease}:`, error.message);
+        // NO FALLBACK in production grade system
         throw error;
     }
 }

@@ -20,7 +20,7 @@ const teamMembers = [
   {
     name: "Tanmay Salgaonkar",
     role: "Tester",
-    contribution: "Tanmay  was responsible for testing the research project implementation and validating its functionality,identifying bugs, and verifying results against requirements."
+    contribution: "Tanmay  was responsible for testing the research project implementation and validating its functionality,identifying bugs, and verifying results against requirements.",
     linkedin: "https://www.linkedin.com/in/tanmay-salgaonkar-939059210/"
   },
 ];
@@ -71,7 +71,7 @@ const TeamPage = () => {
           </motion.p>
         </header>
 
-        <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
+        <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
           {teamMembers.map((member, index) => (
             <TeamMemberCard key={member.name} member={member} index={index} />
           ))}
