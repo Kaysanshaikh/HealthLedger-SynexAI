@@ -16,7 +16,7 @@
     "grant:access": "hardhat run scripts/grantAccess.js --network polygonAmoy",
     "add:doctor": "hardhat run scripts/addDoctor.js --network polygonAmoy",
     "prebuild": "cd frontend && npm install",
-    "build": "npm install --include=dev && npx hardhat compile && pip install -r ml-backend/requirements.txt && cd frontend && npm install && npm run build",
+    "build": "npm install --include=dev && npx hardhat compile && pip install -r ml-backend/requirements.txt && python3 ml-backend/download_datasets.py && cd frontend && npm install && npm run build",
     "start": "node server.js",
     "start:api": "node server.js",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
