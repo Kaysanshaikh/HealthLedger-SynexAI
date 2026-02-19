@@ -16,7 +16,7 @@
     "grant:access": "hardhat run scripts/grantAccess.js --network polygonAmoy",
     "add:doctor": "hardhat run scripts/addDoctor.js --network polygonAmoy",
     "prebuild": "cd frontend && npm install",
-    "build": "npm install && cd frontend && npm install && npm run build",
+    "build": "npm install && npx hardhat compile && cd frontend && npm install && npm run build",
     "start": "node server.js",
     "start:api": "node server.js",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",

@@ -146,19 +146,26 @@ router.get("/models/:modelId", async (req, res) => {
     try {
         const { modelId } = req.params;
 
-        // Get from blockchain
-        const model = await flService.getModel(modelId);
-
-        // Get from database
-        const dbModel = await db.query(
-            `SELECT * FROM fl_models WHERE LOWER(model_id) = LOWER($1)`,
+        // Get from database first (always available)
+        const dbResult = await db.query(
+            `SELECT * FROM fl_models WHERE model_id = $1`,
             [modelId]
         );
+
+        let blockchainData = {};
+        // Try blockchain, but don't fail if unavailable
+        try {
+            if (flService.isBlockchainAvailable()) {
+                blockchainData = await flService.getModel(modelId);
+            }
+        } catch (bcErr) {
+            console.warn("Blockchain unavailable for model details, using DB only:", bcErr.message);
+        }
 
         res.json({
             success: true,
             model: {
-                ...model,
+                ...blockchainData,
                 ...dbResult.rows[0]
             }
         });
@@ -588,8 +595,21 @@ router.get("/rounds/:roundId", async (req, res) => {
     try {
         const { roundId } = req.params;
 
-        // Get from blockchain
-        const round = await flService.getRound(parseInt(roundId));
+        // Get from database first (always available)
+        const dbRound = await db.query(
+            `SELECT * FROM fl_rounds WHERE round_id = $1`,
+            [roundId]
+        );
+
+        let blockchainRound = {};
+        // Try blockchain, but don't fail if unavailable
+        try {
+            if (flService.isBlockchainAvailable()) {
+                blockchainRound = await flService.getRound(parseInt(roundId));
+            }
+        } catch (bcErr) {
+            console.warn("Blockchain unavailable for round details, using DB only:", bcErr.message);
+        }
 
         // Get contributions
         const contributions = await db.query(
@@ -599,7 +619,10 @@ router.get("/rounds/:roundId", async (req, res) => {
 
         res.json({
             success: true,
-            round,
+            round: {
+                ...blockchainRound,
+                ...dbRound.rows[0]
+            },
             contributions: contributions.rows
         });
 
@@ -646,8 +669,16 @@ router.post("/participants/register", async (req, res) => {
             return res.status(400).json({ error: "Institution name and wallet address required" });
         }
 
-        // Register on blockchain
-        await flService.registerFLParticipantByAdmin(walletAddress, institutionName);
+        // Register on blockchain (if available)
+        try {
+            if (flService.isBlockchainAvailable()) {
+                await flService.registerFLParticipantByAdmin(walletAddress, institutionName);
+            } else {
+                console.warn("⚠️ Blockchain unavailable - registering participant in DB only");
+            }
+        } catch (bcErr) {
+            console.warn("⚠️ Blockchain registration failed, continuing with DB only:", bcErr.message);
+        }
 
         // Store in database
         await db.query(
@@ -676,20 +707,35 @@ router.get("/participants/:address", async (req, res) => {
     try {
         const { address } = req.params;
 
-        // Get from blockchain
-        const participant = await flService.getParticipant(address);
-
-        // Get from database
+        // Get from database first (always available)
         const dbResult = await db.query(
             `SELECT * FROM fl_participants WHERE wallet_address = $1`,
             [address]
         );
 
+        let blockchainData = {};
+        // Try blockchain, but don't fail if unavailable
+        try {
+            if (flService.isBlockchainAvailable()) {
+                blockchainData = await flService.getParticipant(address);
+            }
+        } catch (bcErr) {
+            console.warn("Blockchain unavailable for participant details, using DB only:", bcErr.message);
+        }
+
+        const participant = {
+            ...blockchainData,
+            ...dbResult.rows[0]
+        };
+
+        // If participant exists in DB, they are active
+        const isActive = dbResult.rows.length > 0 || (blockchainData && blockchainData.isActive);
+
         res.json({
             success: true,
             participant: {
                 ...participant,
-                ...dbResult.rows[0]
+                isActive
             }
         });
 

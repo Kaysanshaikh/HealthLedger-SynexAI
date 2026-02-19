@@ -13,21 +13,57 @@ const artifactPath = path.join(
 );
 
 let artifact, provider, wallet, contract;
+let blockchainAvailable = false;
 
-// Initialize connection
+// Initialize connection (non-throwing)
 function initialize() {
-    if (!fs.existsSync(artifactPath)) {
-        throw new Error("Contract not compiled. Run: npx hardhat compile");
+    if (blockchainAvailable && contract) {
+        return { provider, wallet, contract };
     }
 
-    artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
+    if (!fs.existsSync(artifactPath)) {
+        console.warn("⚠️ Contract artifact not found. Blockchain features disabled. Run: npx hardhat compile");
+        blockchainAvailable = false;
+        return null;
+    }
 
-    const rpcUrl = process.env.POLYGON_AMOY_RPC || "http://127.0.0.1:8545";
-    provider = new ethers.JsonRpcProvider(rpcUrl);
-    wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-    contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, artifact.abi, wallet);
+    try {
+        artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
 
-    return { provider, wallet, contract };
+        const rpcUrl = process.env.POLYGON_AMOY_RPC || process.env.RPC_URL || "http://127.0.0.1:8545";
+        provider = new ethers.JsonRpcProvider(rpcUrl);
+        wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+        contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, artifact.abi, wallet);
+
+        blockchainAvailable = true;
+        return { provider, wallet, contract };
+    } catch (err) {
+        console.warn("⚠️ Blockchain initialization failed:", err.message);
+        blockchainAvailable = false;
+        return null;
+    }
+}
+
+/**
+ * Check if blockchain is available
+ * @returns {boolean}
+ */
+function isBlockchainAvailable() {
+    if (blockchainAvailable) return true;
+    // Try to initialize once more
+    const result = initialize();
+    return result !== null;
+}
+
+/**
+ * Require blockchain or throw a clear error
+ */
+function requireBlockchain() {
+    const result = initialize();
+    if (!result) {
+        throw new Error("Blockchain not available. Contract artifact missing or RPC unreachable. Ensure npx hardhat compile has been run and RPC_URL is set.");
+    }
+    return result;
 }
 
 // ============================================
@@ -41,7 +77,7 @@ function initialize() {
  * @returns {Promise<string>} Model ID
  */
 async function createFLModel(disease, modelType) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.createFLModel(disease, modelType);
     const receipt = await tx.wait();
 
@@ -68,7 +104,7 @@ async function createFLModel(disease, modelType) {
  * @returns {Promise<Object>} Model details
  */
 async function getModel(modelId) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const model = await contract.getModel(modelId);
 
     return {
@@ -91,7 +127,7 @@ async function getModel(modelId) {
  * @returns {Promise<Array>} Array of model IDs
  */
 async function getAllModels() {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     return await contract.getAllModels();
 }
 
@@ -105,7 +141,7 @@ async function getAllModels() {
  * @returns {Promise<number>} Round ID
  */
 async function initiateFLRound(modelId) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.initiateFLRound(modelId);
     const receipt = await tx.wait();
 
@@ -132,7 +168,7 @@ async function initiateFLRound(modelId) {
  * @returns {Promise<Object>} Round details
  */
 async function getRound(roundId) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const round = await contract.getRound(roundId);
 
     const statusMap = ["initiated", "training", "aggregating", "completed", "failed"];
@@ -161,7 +197,7 @@ async function getRound(roundId) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function registerFLParticipant(institutionName) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.registerFLParticipant(institutionName);
     return await tx.wait();
 }
@@ -173,7 +209,7 @@ async function registerFLParticipant(institutionName) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function registerFLParticipantByAdmin(participantAddress, institutionName) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.registerFLParticipantByAdmin(participantAddress, institutionName);
     return await tx.wait();
 }
@@ -184,7 +220,7 @@ async function registerFLParticipantByAdmin(participantAddress, institutionName)
  * @returns {Promise<Object>} Participant details
  */
 async function getParticipant(participantAddress) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const participant = await contract.getParticipant(participantAddress);
 
     return {
@@ -213,7 +249,7 @@ async function getParticipant(participantAddress) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function submitModelUpdate(roundId, modelUpdateIPFS, zkProofHash, localAccuracy, localLoss, samplesTrained) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
 
     // Scale accuracy and loss for on-chain storage
     const scaledAccuracy = Math.floor(localAccuracy * 10000);
@@ -239,7 +275,7 @@ async function submitModelUpdate(roundId, modelUpdateIPFS, zkProofHash, localAcc
  * @returns {Promise<boolean>} Verification result
  */
 async function verifyZKProof(roundId, participantAddress, proofHash) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.verifyZKProof(roundId, participantAddress, proofHash);
     const receipt = await tx.wait();
 
@@ -267,7 +303,7 @@ async function verifyZKProof(roundId, participantAddress, proofHash) {
  * @returns {Promise<Object>} Contribution details
  */
 async function getContribution(roundId, participantAddress) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const contribution = await contract.getContribution(roundId, participantAddress);
 
     return {
@@ -295,7 +331,7 @@ async function getContribution(roundId, participantAddress) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function aggregateModels(roundId, aggregatedModelIPFS, newAccuracy, newLoss) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
 
     const scaledAccuracy = Math.floor(newAccuracy * 10000);
     const scaledLoss = Math.floor(newLoss * 1000000);
@@ -311,7 +347,7 @@ async function aggregateModels(roundId, aggregatedModelIPFS, newAccuracy, newLos
  * @returns {Promise<Object>} Transaction receipt
  */
 async function setRoundMinParticipants(roundId, minParticipants) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.setRoundMinParticipants(roundId, minParticipants);
     return await tx.wait();
 }
@@ -322,7 +358,7 @@ async function setRoundMinParticipants(roundId, minParticipants) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function finalizeRound(roundId) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.finalizeRound(roundId);
     return await tx.wait();
 }
@@ -339,7 +375,7 @@ async function finalizeRound(roundId) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function reportByzantineAttack(roundId, participantAddress, reason) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.reportByzantineAttack(roundId, participantAddress, reason);
     return await tx.wait();
 }
@@ -356,7 +392,7 @@ async function reportByzantineAttack(roundId, participantAddress, reason) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function distributeReward(roundId, participantAddress, amount) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.distributeReward(roundId, participantAddress, amount);
     return await tx.wait();
 }
@@ -367,7 +403,7 @@ async function distributeReward(roundId, participantAddress, amount) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function setMinParticipants(minParticipants) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.setMinParticipants(minParticipants);
     return await tx.wait();
 }
@@ -378,7 +414,7 @@ async function setMinParticipants(minParticipants) {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function pauseModel(modelId) {
-    const { contract } = initialize();
+    const { contract } = requireBlockchain();
     const tx = await contract.pauseModel(modelId);
     return await tx.wait();
 }
@@ -419,5 +455,9 @@ module.exports = {
 
     // Config
     setMinParticipants,
-    pauseModel
+    pauseModel,
+
+    // Utilities
+    isBlockchainAvailable,
+    setRoundMinParticipants
 };
