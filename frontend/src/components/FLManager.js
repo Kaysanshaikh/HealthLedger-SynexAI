@@ -516,7 +516,7 @@ const FLManager = () => {
                         <div>
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <FileText className="h-5 w-5 text-primary" />
-                                Select Records for Training: {models.find(m => m.model_id === selectingForModel)?.disease.toUpperCase()}
+                                Select Records for Training: {models.find(m => m.model_id === selectingForModel)?.disease?.toUpperCase() || 'MODEL'}
                             </CardTitle>
                             <CardDescription>Choose the health records you want to use for local model training.</CardDescription>
 
@@ -555,58 +555,52 @@ const FLManager = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="max-h-60 overflow-y-auto space-y-2 mb-4 bg-background/50 p-4 rounded-lg border">
-                            {userRecords.length === 0 ? (
+                            {sortedRecords.length === 0 ? (
                                 <div className="text-center py-6 space-y-2">
                                     <Activity className="h-10 w-10 text-muted-foreground mx-auto opacity-20" />
                                     <p className="text-sm text-muted-foreground">No health records found in your vault.</p>
                                 </div>
                             ) : (
-                                userRecords
-                                    .map(record => ({
-                                        record,
-                                        score: getRelevancyScore(record, models.find(m => m.model_id === selectingForModel)?.disease)
-                                    }))
-                                    .sort((a, b) => b.score - a.score) // Sort by relevancy, show all records
-                                    .map(({ record, score }) => (
-                                        <div
-                                            key={record.record_id}
-                                            onClick={() => toggleRecordSelection(record.record_id)}
-                                            className={`p-3 rounded-md border cursor-pointer transition-all flex items-center justify-between ${selectedRecords.includes(record.record_id)
-                                                ? 'bg-primary/10 border-primary ring-1 ring-primary/20'
-                                                : 'bg-background hover:bg-muted/50 border-border'
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-full ${selectedRecords.includes(record.record_id) ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                                                    <FileText className="h-4 w-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-medium">{record.metadata?.testName || 'Medical Record'}</p>
-                                                        {score === 3 && (
-                                                            <span className="px-1.5 py-0.5 bg-yellow-500/10 text-yellow-600 text-[8px] font-bold uppercase rounded border border-yellow-500/20">
-                                                                Primary Data
-                                                            </span>
-                                                        )}
-                                                        {score === 2 && (
-                                                            <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 text-[8px] font-bold uppercase rounded border border-blue-500/20">
-                                                                High Correlation
-                                                            </span>
-                                                        )}
-                                                        {score === 1 && (
-                                                            <span className="px-1.5 py-0.5 bg-gray-500/10 text-gray-500 text-[8px] font-bold uppercase rounded border border-gray-500/20">
-                                                                Supplemental
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-[10px] text-muted-foreground">{record.record_type} • {record.metadata?.testType}</p>
-                                                </div>
+                                sortedRecords.map(record => (
+                                    <div
+                                        key={record.record_id}
+                                        onClick={() => toggleRecordSelection(record.record_id)}
+                                        className={`p-3 rounded-md border cursor-pointer transition-all flex items-center justify-between ${selectedRecords.includes(record.record_id)
+                                            ? 'bg-primary/10 border-primary ring-1 ring-primary/20'
+                                            : 'bg-background hover:bg-muted/50 border-border'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-full ${selectedRecords.includes(record.record_id) ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+                                                <FileText className="h-4 w-4" />
                                             </div>
-                                            <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${selectedRecords.includes(record.record_id) ? 'bg-primary border-primary' : 'border-muted'}`}>
-                                                {selectedRecords.includes(record.record_id) && <Check className="h-3 w-3 text-white" />}
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-medium">{record.metadata?.testName || 'Medical Record'}</p>
+                                                    {record.score === 3 && (
+                                                        <span className="px-1.5 py-0.5 bg-yellow-500/10 text-yellow-600 text-[8px] font-bold uppercase rounded border border-yellow-500/20">
+                                                            Primary Data
+                                                        </span>
+                                                    )}
+                                                    {record.score === 2 && (
+                                                        <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 text-[8px] font-bold uppercase rounded border border-blue-500/20">
+                                                            High Correlation
+                                                        </span>
+                                                    )}
+                                                    {record.score === 1 && (
+                                                        <span className="px-1.5 py-0.5 bg-gray-500/10 text-gray-500 text-[8px] font-bold uppercase rounded border border-gray-500/20">
+                                                            Supplemental
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] text-muted-foreground">{record.record_type} • {record.metadata?.testType}</p>
                                             </div>
                                         </div>
-                                    ))
+                                        <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${selectedRecords.includes(record.record_id) ? 'bg-primary border-primary' : 'border-muted'}`}>
+                                            {selectedRecords.includes(record.record_id) && <Check className="h-3 w-3 text-white" />}
+                                        </div>
+                                    </div>
+                                ))
                             )}
                         </div>
                         <div className="p-4 bg-muted/30 rounded-lg space-y-3">
