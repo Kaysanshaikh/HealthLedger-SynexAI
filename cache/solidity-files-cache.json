@@ -614,8 +614,8 @@
       ]
     },
     "C:\\Users\\Kaysan Shaikh\\Desktop\\Federated Learning\\HealthLedger\\contracts\\HealthLedgerFL.sol": {
-      "lastModificationDate": 1765348560520,
-      "contentHash": "4f99229a4d7efbe7af48dc18961dc30c",
+      "lastModificationDate": 1767560077748,
+      "contentHash": "2162a35ca4ddd589133a5595619b4ab6",
       "sourceName": "contracts/HealthLedgerFL.sol",
       "solcConfig": {
         "version": "0.8.24",
