@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { User, Users, Brain } from 'lucide-react';
@@ -37,7 +37,7 @@ const DoctorDashBoardPage = () => {
 
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Doctor Dashboard</h1>

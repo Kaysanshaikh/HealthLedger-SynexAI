@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import client from "../api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";

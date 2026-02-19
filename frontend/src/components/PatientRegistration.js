@@ -13,7 +13,7 @@ import { AlertTriangle } from "lucide-react";
 
 // Phone number validation for multiple countries
 const isValidPhoneNumber = (phone) => {
-  const cleanPhone = phone.replace(/[\s\-]/g, '');
+  const cleanPhone = phone.replace(/[\s-]/g, '');
 
   // Common country code patterns
   const phonePatterns = [

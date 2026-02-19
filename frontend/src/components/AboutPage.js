@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import NavBar from "./NavBar";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Users, Heart, Brain, ShieldCheck, Network, Zap, Globe, Activity } from 'lucide-react';
+import { Users, ShieldCheck, Network, Zap, Globe, Activity } from 'lucide-react';
 
 const SectionCard = ({ icon, title, children, delay = 0 }) => (
   <motion.div

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import client from "../api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -26,12 +26,12 @@ const ViewDoctorProfile = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         console.log("📋 Fetching doctor profile for HH Number:", hhNumber);
-        
+
         // Try the profile API endpoint
         const response = await client.get(`/profile/doctor/${hhNumber}`);
-        
+
         if (response.data.profile) {
           setDoctorDetails(response.data.profile);
           console.log("✅ Doctor profile fetched:", response.data.profile);
@@ -40,10 +40,10 @@ const ViewDoctorProfile = () => {
         }
       } catch (err) {
         console.error("❌ Failed to fetch doctor profile:", err);
-        
+
         // User-friendly error message
         let errorMsg = "Unable to load doctor profile.";
-        
+
         if (err.response?.data?.error) {
           errorMsg = err.response.data.error;
         } else if (err.response?.status === 404) {
@@ -51,7 +51,7 @@ const ViewDoctorProfile = () => {
         } else if (err.message.includes("network")) {
           errorMsg = "Network error. Please check your connection and try again.";
         }
-        
+
         setError(errorMsg);
       } finally {
         setLoading(false);
@@ -63,7 +63,7 @@ const ViewDoctorProfile = () => {
 
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Doctor Profile</h1>
@@ -106,7 +106,7 @@ const ViewDoctorProfile = () => {
             </CardContent>
           </Card>
         )}
-        
+
         {!loading && !doctorDetails && !error && (
           <Card>
             <CardContent className="text-center py-12">

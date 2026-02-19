@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { Shield, AlertTriangle, CheckCircle, Users, UserCheck, ArrowLeft } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, UserCheck, ArrowLeft } from 'lucide-react';
 import client from "../api/client";
 
 const ManageAccess = () => {
@@ -18,6 +18,23 @@ const ManageAccess = () => {
   const [error, setError] = useState("");
   const [grantedDoctors, setGrantedDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
+
+  const fetchGrantedDoctors = useCallback(async () => {
+    try {
+      setLoadingDoctors(true);
+      console.log("📋 Fetching granted doctors for patient:", hhNumber);
+      const response = await client.get(`/records/patient/${hhNumber}/granted-doctors`);
+      setGrantedDoctors(response.data.doctors || []);
+    } catch (err) {
+      console.error("❌ Failed to fetch granted doctors:", err);
+    } finally {
+      setLoadingDoctors(false);
+    }
+  }, [hhNumber]);
+
+  useEffect(() => {
+    fetchGrantedDoctors();
+  }, [fetchGrantedDoctors]);
 
   const handleGrantAccess = async () => {
     if (!doctorHHNumber) {
@@ -34,13 +51,12 @@ const ManageAccess = () => {
       await client.post(`/records/patient/${hhNumber}/grant`, { doctorHHNumber });
       setSuccess(`Access granted successfully to Doctor (HH: ${doctorHHNumber})!`);
       setDoctorHHNumber("");
-      setError(""); // Clear any previous errors
-      // Refresh the list
+      setError("");
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to grant access:", err);
       setError(err.response?.data?.error || "Failed to grant access. Please try again.");
-      setSuccess(""); // Clear success message on error
+      setSuccess("");
     } finally {
       setLoading(false);
     }
@@ -61,7 +77,6 @@ const ManageAccess = () => {
       await client.post(`/records/patient/${hhNumber}/revoke`, { doctorHHNumber });
       setSuccess(`Access revoked successfully from Doctor (HH: ${doctorHHNumber})!`);
       setDoctorHHNumber("");
-      // Refresh the list
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to revoke access:", err);
@@ -71,56 +86,39 @@ const ManageAccess = () => {
     }
   };
 
-  const fetchGrantedDoctors = async () => {
-    try {
-      setLoadingDoctors(true);
-      console.log("📋 Fetching granted doctors for patient:", hhNumber);
-      const response = await client.get(`/records/patient/${hhNumber}/granted-doctors`);
-      setGrantedDoctors(response.data.doctors || []);
-    } catch (err) {
-      console.error("❌ Failed to fetch granted doctors:", err);
-    } finally {
-      setLoadingDoctors(false);
-    }
-  };
-
   const handleRevokeFromList = async (doctorHH) => {
     if (!window.confirm(`Are you sure you want to revoke access from Doctor (HH: ${doctorHH})?`)) {
       return;
     }
 
     try {
-      setError(""); // Clear errors
+      setError("");
       await client.post(`/records/patient/${hhNumber}/revoke`, { doctorHHNumber: doctorHH });
       setSuccess(`Access revoked successfully from Doctor (HH: ${doctorHH})!`);
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to revoke access:", err);
       setError(err.response?.data?.error || "Failed to revoke access. Please try again.");
-      setSuccess(""); // Clear success on error
+      setSuccess("");
     }
   };
 
   const handleGrantFromList = async (doctorHH) => {
     try {
-      setError(""); // Clear errors
+      setError("");
       await client.post(`/records/patient/${hhNumber}/grant`, { doctorHHNumber: doctorHH });
       setSuccess(`Access re-granted successfully to Doctor (HH: ${doctorHH})!`);
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to grant access:", err);
       setError(err.response?.data?.error || "Failed to grant access. Please try again.");
-      setSuccess(""); // Clear success on error
+      setSuccess("");
     }
   };
 
-  useEffect(() => {
-    fetchGrantedDoctors();
-  }, [hhNumber]);
-
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
           <div>
@@ -163,9 +161,8 @@ const ManageAccess = () => {
               ) : (
                 <div className="space-y-3">
                   {grantedDoctors.map((doctor, index) => (
-                    <div key={doctor.doctor_hh_number || index} className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
-                      doctor.is_active ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                    }`}>
+                    <div key={doctor.doctor_hh_number || index} className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${doctor.is_active ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                      }`}>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold">{doctor.full_name || 'Doctor'}</h4>
@@ -204,16 +201,16 @@ const ManageAccess = () => {
                         </div>
                       </div>
                       {doctor.is_active ? (
-                        <Button 
-                          variant="destructive" 
+                        <Button
+                          variant="destructive"
                           size="sm"
                           onClick={() => handleRevokeFromList(doctor.doctor_hh_number)}
                         >
                           Revoke Access
                         </Button>
                       ) : (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleGrantFromList(doctor.doctor_hh_number)}
                         >

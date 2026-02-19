@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import client from "../api/client";
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -22,11 +22,11 @@ function ViewPatientList() {
       try {
         setLoading(true);
         setError(null);
-        
+
         console.log("📋 Fetching patient list for doctor HH Number:", hhNumber);
         const response = await client.get(`/profile/doctor/${hhNumber}/patients`);
         console.log("✅ Patient list fetched:", response.data);
-        
+
         if (response.data.patients) {
           setPatients(response.data.patients);
         } else {
@@ -34,9 +34,9 @@ function ViewPatientList() {
         }
       } catch (err) {
         console.error("❌ Failed to fetch patient list:", err);
-        
+
         let errorMsg = "Unable to load patient list.";
-        
+
         if (err.response?.data?.error) {
           errorMsg = err.response.data.error;
         } else if (err.response?.status === 404) {
@@ -44,7 +44,7 @@ function ViewPatientList() {
         } else if (err.message.includes("network")) {
           errorMsg = "Network error. Please check your connection and try again.";
         }
-        
+
         setError(errorMsg);
         setPatients([]);
       } finally {
@@ -57,7 +57,7 @@ function ViewPatientList() {
 
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
           <div>
@@ -71,7 +71,7 @@ function ViewPatientList() {
         </header>
 
         {loading && <div className="text-center">Loading patient list...</div>}
-        
+
         {error && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -100,9 +100,9 @@ function ViewPatientList() {
                           <p className="text-xs">Access granted: {new Date(patient.granted_at).toLocaleString()}</p>
                         </div>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => navigate(`/records/patient/${patient.patient_hh_number}/all`)}
                       >
                         View Records

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -228,7 +228,7 @@ function DiagnosticForm() {
 
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
           <div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -38,7 +38,7 @@ const UpdateProfile = () => {
       setLoading(true);
       const response = await client.get(`/users/patient/${hhNumber}`);
       const profile = response.data.patient;
-      
+
       setProfileData(profile);
       setFormData({
         phoneNumber: profile.phoneNumber || '',
@@ -74,7 +74,7 @@ const UpdateProfile = () => {
     try {
       await client.put(`/profile/patient/${hhNumber}`, formData);
       setSuccess("Profile updated successfully!");
-      
+
       // Redirect to profile view after 2 seconds
       setTimeout(() => {
         navigate(`/patient/${hhNumber}`);
@@ -90,7 +90,7 @@ const UpdateProfile = () => {
   if (loading) {
     return (
       <div className="bg-background min-h-screen">
-        <NavBar_Logout />
+        <NavBarLogout />
         <div className="container mx-auto p-4 md:p-8">
           <Card>
             <CardContent className="text-center py-12">
@@ -105,7 +105,7 @@ const UpdateProfile = () => {
 
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
           <div>
@@ -247,9 +247,9 @@ const UpdateProfile = () => {
                 <Button type="submit" disabled={saving}>
                   {saving ? "Saving..." : "Save Changes"}
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => navigate(`/patient/${hhNumber}`)}
                 >
                   Cancel

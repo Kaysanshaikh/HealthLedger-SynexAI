@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import client from '../api/client';
 import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
@@ -89,11 +89,7 @@ const FLManager = () => {
         };
     }, [globalStats]);
 
-    useEffect(() => {
-        fetchModels();
-    }, [user?.walletAddress]); // Refetch when user changes
-
-    const fetchModels = async () => {
+    const fetchModels = useCallback(async () => {
         console.log('🔄 fetchModels triggered for user:', user?.walletAddress);
         try {
             setLoading(true);
@@ -190,7 +186,11 @@ const FLManager = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        fetchModels();
+    }, [fetchModels]);
 
     const handleCreateModel = async (e) => {
         e.preventDefault();
@@ -202,7 +202,6 @@ const FLManager = () => {
             await fetchModels();
         } catch (err) {
             console.error('Failed to create model:', err);
-            const errorMsg = err.response?.data?.error || "Model creation failed. Check console for details.";
             showNotification('error', '❌ Loading Failed', parseBlockchainError(err));
         } finally {
             setLoading(false);
@@ -360,7 +359,6 @@ const FLManager = () => {
                 response: err.response?.data,
                 status: err.response?.status
             });
-            const errorMsg = err.response?.data?.error || err.message;
             showNotification('error', '❌ Contribution Failed', parseBlockchainError(err));
         } finally {
             setTrainingModels(prev => ({ ...prev, [modelId]: false }));
@@ -375,7 +373,6 @@ const FLManager = () => {
             await fetchModels();
         } catch (err) {
             console.error('Failed to complete round:', err);
-            const errorMsg = err.response?.data?.error || err.message;
             showNotification('error', '❌ Round Completion Failed', parseBlockchainError(err));
         } finally {
             setLoading(false);
@@ -392,7 +389,6 @@ const FLManager = () => {
             await fetchModels();
         } catch (err) {
             console.error('Failed to delete model:', err);
-            const errorMsg = err.response?.data?.error || err.message;
             showNotification('error', '❌ Deletion Failed', parseBlockchainError(err));
         } finally {
             setLoading(false);

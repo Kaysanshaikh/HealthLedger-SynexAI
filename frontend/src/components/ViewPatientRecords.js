@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import client, { getBackendUrl } from '../api/client';
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { FileText, User, Calendar, AlertTriangle, ArrowLeft } from 'lucide-react';
+
+import { FileText, AlertTriangle, ArrowLeft } from 'lucide-react';
 
 const RecordDetail = ({ label, value, isCid = false }) => (
   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -68,7 +68,7 @@ function ViewPatientRecords() {
 
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
           <div>

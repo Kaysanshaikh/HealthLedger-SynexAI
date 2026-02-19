@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import NavBar_Logout from "./NavBar_Logout";
+import NavBarLogout from "./NavBarLogout";
 import client from "../api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -26,11 +26,11 @@ const ViewDiagnosticProfile = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         console.log("🔬 Fetching diagnostic profile for HH Number:", hhNumber);
-        
+
         const response = await client.get(`/profile/diagnostic/${hhNumber}`);
-        
+
         if (response.data.profile) {
           setDiagnosticDetails(response.data.profile);
           console.log("✅ Diagnostic profile fetched:", response.data.profile);
@@ -39,9 +39,9 @@ const ViewDiagnosticProfile = () => {
         }
       } catch (err) {
         console.error("❌ Failed to fetch diagnostic profile:", err);
-        
+
         let errorMsg = "Unable to load diagnostic profile.";
-        
+
         if (err.response?.data?.error) {
           errorMsg = err.response.data.error;
         } else if (err.response?.status === 404) {
@@ -49,7 +49,7 @@ const ViewDiagnosticProfile = () => {
         } else if (err.message.includes("network")) {
           errorMsg = "Network error. Please check your connection and try again.";
         }
-        
+
         setError(errorMsg);
       } finally {
         setLoading(false);
@@ -61,7 +61,7 @@ const ViewDiagnosticProfile = () => {
 
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Diagnostic Center Profile</h1>

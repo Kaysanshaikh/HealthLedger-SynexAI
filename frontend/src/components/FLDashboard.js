@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
-import NavBarLogout from './NavBar_Logout';
+import NavBarLogout from './NavBarLogout';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { useAuth } from '../context/AuthContext';
@@ -164,7 +164,6 @@ function FLDashboard() {
             await fetchModels();
         } catch (err) {
             console.error('Failed to create model:', err);
-            const errorMsg = err.response?.data?.error || "Model creation failed. Check console for details.";
             showNotification('error', '❌ Model creation failed', parseBlockchainError(err));
         } finally {
             setLoading(false);
@@ -186,7 +185,6 @@ function FLDashboard() {
             await fetchModels(); // This will also refresh active rounds
         } catch (err) {
             console.error('Round initiation failed:', err);
-            const errorMsg = err.response?.data?.error || err.message;
             showNotification('error', '❌ Initiation Failed', parseBlockchainError(err));
         } finally {
             setTrainingModels(prev => ({ ...prev, [modelId]: false }));
@@ -208,7 +206,6 @@ function FLDashboard() {
             await fetchModels(); // Refresh to show updated status
         } catch (err) {
             console.error('Complete round failed:', err);
-            const errorMsg = err.response?.data?.error || err.message;
             showNotification('error', '❌ Round Failed', parseBlockchainError(err));
         } finally {
             setTrainingModels(prev => ({ ...prev, [modelId]: false }));
@@ -225,7 +222,6 @@ function FLDashboard() {
             await fetchModels();
         } catch (err) {
             console.error('Failed to delete model:', err);
-            const errorMsg = err.response?.data?.error || err.message;
             showNotification('error', '❌ Deletion Failed', parseBlockchainError(err));
         } finally {
             setLoading(false);

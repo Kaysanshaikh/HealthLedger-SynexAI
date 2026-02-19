@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import LandingPage_1 from "./components/LandingPage_1";
+import LandingPage1 from "./components/LandingPage1";
 import RegisterPage from "./components/RegisterPage";
 import PatientRegistry from "./components/PatientRegistration";
 import DoctorRegistry from "./components/DoctorRegistration";
@@ -51,7 +51,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 const RoutesWithProtection = () => (
   <Routes>
-    <Route path="/" element={<LandingPage_1 />} />
+    <Route path="/" element={<LandingPage1 />} />
     <Route path="/AboutPage" element={<AboutUs />} />
     <Route path="/team" element={<TeamPage />} />
     <Route path="/register" element={<RegisterPage />} />
