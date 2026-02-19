@@ -43,7 +43,7 @@ const ViewProfile = () => {
 
   return (
     <div className="bg-background min-h-screen">
-      <NavBar_Logout />
+      <NavBarLogout />
       <div className="container mx-auto p-4 md:p-8">
         <header className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
