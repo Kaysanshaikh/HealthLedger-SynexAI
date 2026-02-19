@@ -374,21 +374,36 @@ async function downloadModelFromIPFS(cid) {
  */
 async function callPythonML(scriptName, inputData) {
     return new Promise((resolve, reject) => {
-        const options = {
-            mode: 'json',
-            pythonPath: 'python',
-            pythonOptions: ['-u'],
-            scriptPath: ML_BACKEND_DIR,
-            args: [JSON.stringify(inputData)]
-        };
+        try {
+            const options = {
+                mode: 'text',
+                pythonPath: 'python3',
+                pythonOptions: ['-u'],
+                scriptPath: ML_BACKEND_DIR,
+                args: [JSON.stringify(inputData)]
+            };
 
-        PythonShell.run(scriptName, options, (err, results) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(results[0]);
-            }
-        });
+            PythonShell.run(scriptName, options, (err, results) => {
+                if (err) {
+                    return reject(new Error(`Python ML error: ${err.message || err}`));
+                }
+                try {
+                    // Find the last line that looks like valid JSON
+                    const jsonLine = results && results.reverse().find(line => {
+                        const trimmed = line.trim();
+                        return trimmed.startsWith('{') || trimmed.startsWith('[');
+                    });
+                    if (!jsonLine) {
+                        return reject(new Error(`Python returned no JSON output. Raw: ${(results || []).join('\\n')}`));
+                    }
+                    resolve(JSON.parse(jsonLine));
+                } catch (parseErr) {
+                    reject(new Error(`Failed to parse Python output: ${parseErr.message}`));
+                }
+            });
+        } catch (syncErr) {
+            reject(new Error(`Failed to start Python process: ${syncErr.message}`));
+        }
     });
 }
 
