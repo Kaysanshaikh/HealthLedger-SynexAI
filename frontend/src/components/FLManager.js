@@ -38,6 +38,8 @@ const FLManager = () => {
         network: 'Polygon Amoy'
     });
     const [notification, setNotification] = useState(null);
+    const [isParticipant, setIsParticipant] = useState(false);
+    const [registering, setRegistering] = useState(false);
 
     // Auto-dismiss notification
     useEffect(() => {
@@ -169,6 +171,20 @@ const FLManager = () => {
             if (statsRes.data.success) {
                 setGlobalStats(statsRes.data.stats);
             }
+
+            // Check if user is a registered FL participant
+            if (user?.walletAddress) {
+                try {
+                    const participantRes = await client.get(`${API_URL}/participants/${user.walletAddress}`);
+                    if (participantRes.data.success && participantRes.data.participant?.isActive) {
+                        setIsParticipant(true);
+                    } else {
+                        setIsParticipant(false);
+                    }
+                } catch (err) {
+                    setIsParticipant(false);
+                }
+            }
         } catch (err) {
             console.error('Failed to fetch models or records:', err);
         } finally {
@@ -248,6 +264,26 @@ const FLManager = () => {
         return 1; // Default: allow all records as supplemental data
     };
 
+    const handleRegister = async () => {
+        if (!user?.walletAddress) return;
+        try {
+            setRegistering(true);
+            const institutionName = user.institutionName || (user.role === 'patient' ? `Patient ${user.hhNumber}` : `Diagnostic Center ${user.hhNumber}`);
+            await client.post(`${API_URL}/participants/register`, {
+                walletAddress: user.walletAddress,
+                institutionName
+            });
+            showNotification('success', '✅ Registered!', 'You are now a registered Federated Learning participant.');
+            setIsParticipant(true);
+            await fetchModels();
+        } catch (err) {
+            console.error('Registration failed:', err);
+            showNotification('error', '❌ Registration Failed', parseBlockchainError(err));
+        } finally {
+            setRegistering(false);
+        }
+    };
+
     const sortedRecords = useMemo(() => {
         if (!selectingForModel) return userRecords;
         const model = models.find(m => m.model_id === selectingForModel);
@@ -290,35 +326,31 @@ const FLManager = () => {
             }
 
             const roundId = activeRound.round_id;
-            console.log(`🚀 Starting training for round ${roundId} with ${selectedRecords.length} records...`);
+            console.log(`🚀 Starting REAL training for round ${roundId} with ${selectedRecords.length} records...`);
 
-            // 2. Local Training (on selected records)
-            // In a production app, this would use TensorFlow.js or similar ML library 
-            // to train on the local decrypted clinical data.
-            console.log(`💪 Training model ${modelId} on ${selectedRecords.length} clinical records...`);
+            // 2. Local Training (on Kaggle data via Backend)
+            console.log(`🧠 Invoking Python ML backend for ${modelId}...`);
+            const trainRes = await client.post(`${API_URL}/rounds/train`, {
+                modelId,
+                samples: selectedRecords.length
+            });
 
-            // For the production-grade skeleton, we generate local weights based on the actual sample size
-            const weightsRes = {
-                layer1: Array(100).fill(0).map(() => Math.random() - 0.5),
-                output: Array(10).fill(0).map(() => Math.random() - 0.5)
-            };
+            if (!trainRes.data.success) {
+                throw new Error(trainRes.data.error || "Training failed");
+            }
 
-            const metrics = {
-                accuracy: 0.82 + (Math.random() * 0.15),
-                loss: 0.12 + (Math.random() * 0.1),
-                samplesTrained: selectedRecords.length
-            };
+            const { modelWeights, metrics } = trainRes.data;
 
             console.log('📤 Submitting contribution...', { roundId, metrics });
             // 3. Submit contribution
             await client.post(`${API_URL}/rounds/submit`, {
                 roundId,
-                modelWeights: weightsRes,
+                modelWeights,
                 trainingMetrics: metrics
             });
 
             console.log('✅ Contribution successful!');
-            showNotification('success', '✅ Success!', `Training completed on ${metrics.samplesTrained} health records.`);
+            showNotification('success', '✅ Success!', `Training completed on real Kaggle datasets with ${metrics.accuracy.toFixed(2)} accuracy.`);
             setSelectedRecords([]); // Reset selection
             await fetchModels();
         } catch (err) {
@@ -453,6 +485,27 @@ const FLManager = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Registration Callout for Participants */}
+            {!isParticipant && user?.role !== 'admin' && (
+                <Alert className="mb-8 border-primary/50 bg-primary/5">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <AlertTitle className="text-primary font-bold">Research Registration Required</AlertTitle>
+                    <AlertDescription className="flex flex-col md:flex-row items-center justify-between gap-4 py-2">
+                        <p className="text-sm">
+                            To contribute to research models and earn rewards, you must register your wallet as a researcher on the HealthLedger network.
+                        </p>
+                        <Button
+                            onClick={handleRegister}
+                            disabled={registering}
+                            className="whitespace-nowrap shadow-lg shadow-primary/20"
+                        >
+                            {registering ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                            Register as Researcher
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
 
 
 
@@ -696,12 +749,17 @@ const FLManager = () => {
                                             ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-50 cursor-default'
                                             : 'bg-primary hover:bg-primary/90 shadow-primary/20'}`}
                                         onClick={() => handleStartTraining(model.model_id)}
-                                        disabled={trainingModels[model.model_id] || hasContributed || selectingForModel}
+                                        disabled={trainingModels[model.model_id] || hasContributed || selectingForModel || (!isParticipant && user?.role !== 'admin')}
                                     >
                                         {trainingModels[model.model_id] ? (
                                             <div className="flex items-center gap-2">
                                                 <RefreshCw className="h-4 w-4 animate-spin" />
                                                 <span>Training Locally...</span>
+                                            </div>
+                                        ) : !isParticipant && user?.role !== 'admin' ? (
+                                            <div className="flex items-center gap-2">
+                                                <AlertCircle className="h-4 w-4" />
+                                                <span>Register to Contribute</span>
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-2">
