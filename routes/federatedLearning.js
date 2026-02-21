@@ -249,30 +249,30 @@ router.post("/rounds/train", async (req, res) => {
         const source = dataSource || 'kaggle';
         const limit = sampleCount || samples || null;
 
-        console.log(`🧠 Starting local training for ${disease} model (source: ${source}, limit: ${limit})...`);
+        console.log(`🧠 [ASYNC] Initiating local training for ${disease} model...`);
 
-        // Use mlModelService to train with selected data source
-        const trainingResult = await mlModelService.trainLocalModel(disease, {
+        // Start training in background (non-blocking)
+        // This prevents Render's HTTP request timeout (usually 30s)
+        mlModelService.trainLocalModel(disease, {
             dataSource: source,
             sampleCount: limit,
             modelId
+        }).catch(err => {
+            console.error(`❌ Background training failed for ${modelId}:`, err);
         });
 
+        // Respond immediately
         res.json({
             success: true,
-            modelWeights: trainingResult.modelWeights,
-            metrics: {
-                accuracy: trainingResult.accuracy,
-                loss: trainingResult.loss,
-                samplesTrained: trainingResult.samplesTrained,
-                dataSource: trainingResult.dataSource
-            }
+            async: true,
+            status: 'started',
+            message: "Training started in background. Please poll status endpoint for results."
         });
 
     } catch (error) {
-        console.error("Local training error:", error);
+        console.error("Initiate training error:", error);
         res.status(500).json({
-            error: `Local training failed: ${error.message}. Ensure Kaggle datasets are present in ml-backend/datasets/`
+            error: `Failed to initiate training: ${error.message}`
         });
     }
 });

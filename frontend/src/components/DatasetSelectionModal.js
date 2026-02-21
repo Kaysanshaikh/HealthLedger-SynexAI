@@ -55,7 +55,8 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                     setProgress({
                         status: res.data.status,
                         progress: res.data.progress || 0,
-                        step: res.data.step || ''
+                        step: res.data.step || '',
+                        result: res.data.result || null // Capture final result
                     });
                     if (res.data.status === 'completed' || res.data.status === 'failed') {
                         clearInterval(interval);
@@ -72,6 +73,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
         try {
             setTraining(true);
             setTrainingError(null);
+            setTrainingResult(null);
             setProgress({ status: 'preparing', progress: 5, step: 'Starting...' });
 
             // First check for active round
@@ -84,7 +86,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                 return;
             }
 
-            // Start training
+            // Start training - this is now ASYNC and returns immediately
             const trainRes = await client.post(`${API_URL}/rounds/train`, {
                 modelId,
                 dataSource,
@@ -92,12 +94,40 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             });
 
             if (!trainRes.data.success) {
-                throw new Error(trainRes.data.error || 'Training failed');
+                throw new Error(trainRes.data.error || 'Training failed to initiate');
             }
 
-            const { modelWeights, metrics } = trainRes.data;
+            // WAIT for polling to complete
+            let finalResult = null;
+            await new Promise((resolve, reject) => {
+                const checkInterval = setInterval(async () => {
+                    try {
+                        const statusRes = await client.get(`${API_URL}/training/status/${modelId}`);
+                        if (statusRes.data.status === 'completed') {
+                            finalResult = statusRes.data.result;
+                            clearInterval(checkInterval);
+                            resolve();
+                        } else if (statusRes.data.status === 'failed') {
+                            clearInterval(checkInterval);
+                            reject(new Error(statusRes.data.error || 'Training failed recorded in status'));
+                        }
+                    } catch (err) {
+                        // Keep trying
+                    }
+                }, 2000);
 
-            setProgress({ status: 'submitting', progress: 90, step: 'Submitting to blockchain...' });
+                // Safety timeout for the frontend loop (6 minutes)
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                    reject(new Error('Training timed out on frontend. Check backend logs.'));
+                }, 360000);
+            });
+
+            if (!finalResult) throw new Error('Training finished but no results were returned');
+
+            const { modelWeights, metrics } = finalResult;
+
+            setProgress({ status: 'submitting', progress: 95, step: 'Submitting to blockchain...' });
 
             // Submit contribution
             await client.post(`${API_URL}/rounds/submit`, {
@@ -111,7 +141,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
 
             if (onTrainingComplete) onTrainingComplete(metrics);
         } catch (err) {
-            console.error('Training failed:', err);
+            console.error('Training flow error:', err);
             setTrainingError(err.response?.data?.error || err.message || 'Training failed');
             setProgress({ status: 'failed', progress: 0, step: 'Training failed' });
         } finally {

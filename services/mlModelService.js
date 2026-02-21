@@ -171,7 +171,16 @@ async function trainLocalModel(disease, options = {}) {
                 step: 'Training complete',
                 accuracy: result.accuracy,
                 loss: result.loss,
-                samples: result.metrics?.samples || 0
+                samples: result.metrics?.samples || 0,
+                result: {
+                    modelWeights: result.weights,
+                    metrics: {
+                        accuracy: result.accuracy,
+                        loss: result.loss,
+                        samplesTrained: result.metrics?.samples || 0,
+                        dataSource
+                    }
+                }
             });
         }
 
@@ -509,26 +518,52 @@ async function downloadModelFromIPFS(cid) {
 async function callPythonML(scriptName, inputData) {
     return new Promise((resolve, reject) => {
         try {
-            const options = {
+            const shell = new PythonShell(scriptName, {
                 mode: 'text',
                 pythonPath: 'python3',
-                pythonOptions: ['-u'],
-                scriptPath: ML_BACKEND_DIR,
-                args: [JSON.stringify(inputData)]
-            };
+                pythonOptions: ['-u'], // Unbuffered output
+                scriptPath: ML_BACKEND_DIR
+            });
 
-            PythonShell.run(scriptName, options, (err, results) => {
+            let output = [];
+            let errorOccurred = false;
+
+            // Capture output
+            shell.on('message', (message) => {
+                output.push(message);
+            });
+
+            // Capture error
+            shell.on('stderr', (stderr) => {
+                console.warn(`[PYTHON STDERR] ${stderr}`);
+            });
+
+            // Set timeout (5 minutes - Python cold-start on Render can be slow)
+            const timeout = setTimeout(() => {
+                errorOccurred = true;
+                shell.kill();
+                reject(new Error(`Python execution timed out after 5 minutes (${scriptName})`));
+            }, 300000);
+
+            // Send data via stdin (avoids CLI argv length limits)
+            shell.send(JSON.stringify(inputData));
+            shell.end((err, code, signal) => {
+                clearTimeout(timeout);
+                if (errorOccurred) return;
+
                 if (err) {
-                    return reject(new Error(`Python ML error: ${err.message || err}`));
+                    return reject(new Error(`Python ML error: ${err.message || err} (Exit code: ${code}, Signal: ${signal})`));
                 }
+
                 try {
                     // Find the last line that looks like valid JSON
-                    const jsonLine = results && results.reverse().find(line => {
+                    const jsonLine = output.reverse().find(line => {
                         const trimmed = line.trim();
                         return trimmed.startsWith('{') || trimmed.startsWith('[');
                     });
+
                     if (!jsonLine) {
-                        return reject(new Error(`Python returned no JSON output. Raw: ${(results || []).join('\\n')}`));
+                        return reject(new Error(`Python returned no JSON output. Raw output: ${output.join('\\n')}`));
                     }
                     resolve(JSON.parse(jsonLine));
                 } catch (parseErr) {

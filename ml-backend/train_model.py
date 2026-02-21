@@ -154,12 +154,25 @@ def train(input_data):
         return {"error": f"Model training failed: {str(e)}"}
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        try:
-            input_data = json.loads(sys.argv[1])
-            result = train(input_data)
-            print(json.dumps(result))
-        except json.JSONDecodeError:
-            print(json.dumps({"error": "Invalid JSON input"}))
-    else:
-        print(json.dumps({"error": "No input data provided"}))
+    # Read from stdin instead of sys.argv for larger payloads and reliability
+    try:
+        if not sys.stdin.isatty():
+            input_raw = sys.stdin.read().strip()
+            if input_raw:
+                input_data = json.loads(input_raw)
+                result = train(input_data)
+                print(json.dumps(result))
+            else:
+                print(json.dumps({"error": "No input data provided via stdin"}))
+        else:
+            # Fallback for manual CLI testing
+            if len(sys.argv) > 1:
+                input_data = json.loads(sys.argv[1])
+                result = train(input_data)
+                print(json.dumps(result))
+            else:
+                print(json.dumps({"error": "No input data provided via stdin or argv"}))
+    except json.JSONDecodeError as e:
+        print(json.dumps({"error": f"Invalid JSON input: {str(e)}"}))
+    except Exception as e:
+        print(json.dumps({"error": f"Execution error: {str(e)}"}))
