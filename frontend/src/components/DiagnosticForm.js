@@ -7,8 +7,71 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { FileText, AlertTriangle, CheckCircle, ArrowLeft, Upload, File, X } from 'lucide-react';
+import { FileText, AlertTriangle, CheckCircle, ArrowLeft, Upload, File, X, Plus, Trash2, Activity } from 'lucide-react';
 import client from "../api/client";
+
+// Disease-specific metric presets for structured health data entry
+const METRIC_PRESETS = {
+  metabolic: [
+    { name: 'Glucose', unit: 'mg/dL', placeholder: 'e.g., 120' },
+    { name: 'BMI', unit: 'kg/m²', placeholder: 'e.g., 28.5' },
+    { name: 'Insulin', unit: 'µU/mL', placeholder: 'e.g., 80' },
+    { name: 'HbA1c', unit: '%', placeholder: 'e.g., 6.5' },
+    { name: 'Blood Pressure', unit: 'mmHg', placeholder: 'e.g., 130' },
+    { name: 'Skin Thickness', unit: 'mm', placeholder: 'e.g., 29' },
+    { name: 'Age', unit: 'years', placeholder: 'e.g., 45' },
+    { name: 'Pregnancies', unit: 'count', placeholder: 'e.g., 2' },
+    { name: 'Diabetes Pedigree Function', unit: '', placeholder: 'e.g., 0.627' },
+  ],
+  cardiovascular: [
+    { name: 'Cholesterol', unit: 'mg/dL', placeholder: 'e.g., 200' },
+    { name: 'Resting Blood Pressure', unit: 'mmHg', placeholder: 'e.g., 140' },
+    { name: 'Max Heart Rate', unit: 'bpm', placeholder: 'e.g., 150' },
+    { name: 'Chest Pain Type', unit: '0-3', placeholder: '0=typical, 1=atypical, 2=non-anginal, 3=asymptomatic' },
+    { name: 'ST Depression', unit: 'mm', placeholder: 'e.g., 2.3' },
+    { name: 'Fasting Blood Sugar', unit: 'mg/dL', placeholder: 'e.g., 120' },
+    { name: 'Resting ECG', unit: '0-2', placeholder: '0=normal, 1=ST-T wave abnormality, 2=LVH' },
+    { name: 'Exercise Angina', unit: '0-1', placeholder: '0=no, 1=yes' },
+    { name: 'Age', unit: 'years', placeholder: 'e.g., 55' },
+    { name: 'Sex', unit: '0-1', placeholder: '0=female, 1=male' },
+  ],
+  genomics: [
+    { name: 'Radius Mean', unit: '', placeholder: 'e.g., 17.99' },
+    { name: 'Texture Mean', unit: '', placeholder: 'e.g., 10.38' },
+    { name: 'Perimeter Mean', unit: '', placeholder: 'e.g., 122.8' },
+    { name: 'Area Mean', unit: '', placeholder: 'e.g., 1001' },
+    { name: 'Smoothness Mean', unit: '', placeholder: 'e.g., 0.1184' },
+    { name: 'Compactness Mean', unit: '', placeholder: 'e.g., 0.2776' },
+    { name: 'Concavity Mean', unit: '', placeholder: 'e.g., 0.3001' },
+    { name: 'Symmetry Mean', unit: '', placeholder: 'e.g., 0.2419' },
+    { name: 'Fractal Dimension Mean', unit: '', placeholder: 'e.g., 0.07871' },
+  ],
+  respiratory: [
+    { name: 'FEV1', unit: 'L', placeholder: 'e.g., 3.5' },
+    { name: 'FVC', unit: 'L', placeholder: 'e.g., 4.2' },
+    { name: 'SpO2', unit: '%', placeholder: 'e.g., 98' },
+    { name: 'Respiratory Rate', unit: 'breaths/min', placeholder: 'e.g., 16' },
+    { name: 'Temperature', unit: '°C', placeholder: 'e.g., 37.2' },
+    { name: 'Age', unit: 'years', placeholder: 'e.g., 50' },
+  ],
+  lifestyle: [
+    { name: 'BMI', unit: 'kg/m²', placeholder: 'e.g., 28.5' },
+    { name: 'Blood Pressure Systolic', unit: 'mmHg', placeholder: 'e.g., 130' },
+    { name: 'Blood Pressure Diastolic', unit: 'mmHg', placeholder: 'e.g., 85' },
+    { name: 'Heart Rate', unit: 'bpm', placeholder: 'e.g., 72' },
+    { name: 'Age', unit: 'years', placeholder: 'e.g., 35' },
+  ],
+  other: []
+};
+
+const TEST_TYPE_OPTIONS = [
+  { value: 'metabolic', label: '🧬 Metabolic (Diabetes markers)' },
+  { value: 'cardiovascular', label: '❤️ Cardiovascular (Heart markers)' },
+  { value: 'genomics', label: '🧪 Genomics (Cancer markers)' },
+  { value: 'respiratory', label: '🫁 Respiratory (Lung markers)' },
+  { value: 'lifestyle', label: '🏃 Lifestyle (General health)' },
+  { value: 'other', label: '📋 Other' },
+];
 
 function DiagnosticForm() {
   const { hhNumber } = useParams();
@@ -20,6 +83,7 @@ function DiagnosticForm() {
     results: "",
     notes: ""
   });
+  const [healthMetrics, setHealthMetrics] = useState([]);
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -28,7 +92,38 @@ function DiagnosticForm() {
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    // When testType changes, auto-populate health metric presets
+    if (name === 'testType' && value && METRIC_PRESETS[value]) {
+      const presets = METRIC_PRESETS[value];
+      if (presets.length > 0) {
+        setHealthMetrics(presets.map(p => ({
+          name: p.name,
+          value: '',
+          unit: p.unit,
+          placeholder: p.placeholder
+        })));
+      } else {
+        setHealthMetrics([]);
+      }
+    }
+  };
+
+  // Health metrics management
+  const addMetric = () => {
+    setHealthMetrics([...healthMetrics, { name: '', value: '', unit: '', placeholder: '' }]);
+  };
+
+  const removeMetric = (index) => {
+    setHealthMetrics(healthMetrics.filter((_, i) => i !== index));
+  };
+
+  const updateMetric = (index, field, value) => {
+    const updated = [...healthMetrics];
+    updated[index] = { ...updated[index], [field]: value };
+    setHealthMetrics(updated);
   };
 
   const handleFileChange = (e) => {
@@ -36,7 +131,6 @@ function DiagnosticForm() {
 
     if (selectedFiles.length === 0) return;
 
-    // Validate max 5 files
     if (selectedFiles.length > 5) {
       setError("You can upload a maximum of 5 files at once");
       return;
@@ -50,16 +144,12 @@ function DiagnosticForm() {
       'image/png'
     ];
 
-    // Validate each file
     for (const file of selectedFiles) {
-      // Validate file size (1MB)
       if (file.size > 1 * 1024 * 1024) {
         setError(`File "${file.name}" exceeds 1MB limit`);
         setFiles([]);
         return;
       }
-
-      // Validate file type
       if (!allowedTypes.includes(file.type)) {
         setError(`File "${file.name}" has invalid type. Only PDF, DOC, DOCX, JPG, and PNG are allowed.`);
         setFiles([]);
@@ -69,20 +159,16 @@ function DiagnosticForm() {
 
     setFiles(selectedFiles);
     setError("");
-    setUploadedFiles([]); // Reset uploaded files when new files are selected
+    setUploadedFiles([]);
   };
 
   const removeFile = (indexToRemove) => {
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
     setFiles(updatedFiles);
-
-    // Reset file input if no files left
     if (updatedFiles.length === 0) {
       const fileInput = document.getElementById('fileUpload');
       if (fileInput) fileInput.value = '';
     }
-
-    // Also remove from uploaded files if it was uploaded
     const updatedUploadedFiles = uploadedFiles.filter((_, index) => index !== indexToRemove);
     setUploadedFiles(updatedUploadedFiles);
   };
@@ -92,7 +178,6 @@ function DiagnosticForm() {
       setError("Please select at least one file to upload");
       return [];
     }
-
     if (!formData.patientHHNumber) {
       setError("Please enter Patient HH Number before uploading files");
       return [];
@@ -103,9 +188,6 @@ function DiagnosticForm() {
       setError("");
       const uploadedResults = [];
 
-      console.log(`📤 Uploading ${files.length} file(s) to IPFS...`);
-
-      // Upload each file
       for (const file of files) {
         const uploadFormData = new FormData();
         uploadFormData.append('file', file);
@@ -113,14 +195,10 @@ function DiagnosticForm() {
         uploadFormData.append('recordType', 'diagnostic-report');
         uploadFormData.append('description', `${formData.testName} - ${formData.testType}`);
         uploadFormData.append('uploaderHHNumber', hhNumber);
-        uploadFormData.append('skipRecordCreation', 'true'); // Don't create record yet
-
-        console.log("📤 Uploading:", file.name);
+        uploadFormData.append('skipRecordCreation', 'true');
 
         const response = await client.post('/records/upload', uploadFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
 
         uploadedResults.push({
@@ -130,30 +208,17 @@ function DiagnosticForm() {
           fileType: response.data.metadata.fileType,
           fileSize: response.data.metadata.fileSize
         });
-
-        console.log("✅ File uploaded:", file.name, response.data.ipfs.cid);
       }
 
       setUploadedFiles(uploadedResults);
       return uploadedResults;
     } catch (err) {
-      console.error("❌ File upload failed:", err);
-      console.error("Error details:", {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-
       let errorMessage = "Failed to upload files to IPFS";
-
       if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (err.message.includes('Network Error')) {
-        errorMessage = "Cannot connect to server. Please make sure the backend server is running on port 5001.";
-      } else if (err.response?.status === 404) {
-        errorMessage = "Upload endpoint not found. Please check server configuration.";
+        errorMessage = "Cannot connect to server. Please make sure the backend server is running.";
       }
-
       setError(errorMessage);
       return [];
     } finally {
@@ -170,30 +235,29 @@ function DiagnosticForm() {
     try {
       let uploadResults = uploadedFiles;
 
-      // If files are selected but not uploaded yet, upload them first
       if (files.length > 0 && uploadedFiles.length === 0) {
         uploadResults = await handleFileUpload();
         if (uploadResults.length === 0) {
           setLoading(false);
-          return; // Upload failed, don't proceed
+          return;
         }
       }
 
-      // Use the first file's CID for the diagnostic report
       const ipfsCID = uploadResults.length > 0 ? uploadResults[0].cid : "";
-
-      // Include file metadata if files were uploaded
       const fileMetadata = uploadResults.length > 0 ? {
         fileName: uploadResults[0].fileName,
         fileType: uploadResults[0].fileType,
         fileSize: uploadResults[0].fileSize
       } : {};
 
-      console.log("📋 Creating diagnostic report:", formData);
+      // Filter out empty metrics
+      const validMetrics = healthMetrics.filter(m => m.name && m.value !== '' && m.value !== undefined);
+
       await client.post("/records/diagnostic", {
         ...formData,
         ipfsCID: ipfsCID,
         diagnosticHHNumber: hhNumber,
+        healthMetrics: validMetrics,
         ...fileMetadata
       });
 
@@ -201,30 +265,27 @@ function DiagnosticForm() {
       if (uploadResults.length > 0) {
         successMsg += ` ${uploadResults.length} file(s) uploaded to IPFS.`;
       }
+      if (validMetrics.length > 0) {
+        successMsg += ` ${validMetrics.length} health metric(s) saved for ML training.`;
+      }
       setSuccess(successMsg);
 
       // Reset form
-      setFormData({
-        patientHHNumber: "",
-        testName: "",
-        testType: "",
-        results: "",
-        notes: ""
-      });
+      setFormData({ patientHHNumber: "", testName: "", testType: "", results: "", notes: "" });
+      setHealthMetrics([]);
       setFiles([]);
       setUploadedFiles([]);
-
-      // Reset file input
       const fileInput = document.getElementById('fileUpload');
       if (fileInput) fileInput.value = '';
 
     } catch (err) {
-      console.error("❌ Failed to create report:", err);
       setError(err.response?.data?.error || "Failed to create diagnostic report. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  const filledMetricsCount = healthMetrics.filter(m => m.name && m.value !== '' && m.value !== undefined).length;
 
   return (
     <div className="bg-background min-h-screen">
@@ -294,16 +355,23 @@ function DiagnosticForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="testType">Test Type *</Label>
-                  <Input
+                  <Label htmlFor="testType">Test Category *</Label>
+                  <select
                     id="testType"
                     name="testType"
-                    type="text"
-                    placeholder="Laboratory, Imaging, etc."
                     value={formData.testType}
                     onChange={handleChange}
                     required
-                  />
+                    className="w-full p-2 border rounded-md bg-background text-sm"
+                  >
+                    <option value="">Select test category...</option>
+                    {TEST_TYPE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    This categorization helps match records to relevant ML models for privacy-preserving research.
+                  </p>
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
@@ -336,19 +404,12 @@ function DiagnosticForm() {
                               <span className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(2)} KB)</span>
                               {isUploaded && (
                                 <span className="ml-auto text-xs text-green-600 flex items-center gap-1">
-                                  <CheckCircle className="h-3 w-3" />
-                                  Uploaded
+                                  <CheckCircle className="h-3 w-3" /> Uploaded
                                 </span>
                               )}
                               {!isUploaded && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeFile(index)}
-                                  className="ml-auto h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  title="Remove file"
-                                >
+                                <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(index)}
+                                  className="ml-auto h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50" title="Remove file">
                                   <X className="h-3 w-3" />
                                 </Button>
                               )}
@@ -358,22 +419,15 @@ function DiagnosticForm() {
                       </div>
                     )}
                     {files.length > 0 && uploadedFiles.length === 0 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleFileUpload}
-                        disabled={uploading || loading || !formData.patientHHNumber}
-                        className="w-full md:w-auto"
-                      >
+                      <Button type="button" variant="outline" size="sm" onClick={handleFileUpload}
+                        disabled={uploading || loading || !formData.patientHHNumber} className="w-full md:w-auto">
                         <Upload className="h-4 w-4 mr-2" />
                         {uploading ? `Uploading ${files.length} file(s)...` : `Upload ${files.length} File(s) Now`}
                       </Button>
                     )}
                     {uploadedFiles.length > 0 && (
                       <div className="text-sm text-green-600 flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4" />
-                        {uploadedFiles.length} file(s) uploaded successfully to IPFS
+                        <CheckCircle className="h-4 w-4" /> {uploadedFiles.length} file(s) uploaded successfully to IPFS
                       </div>
                     )}
                   </div>
@@ -393,6 +447,72 @@ function DiagnosticForm() {
                 />
               </div>
 
+              {/* Structured Health Metrics Section for ML Training */}
+              {formData.testType && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Activity className="h-5 w-5 text-primary" />
+                      Health Metrics for ML Training
+                      {filledMetricsCount > 0 && (
+                        <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                          {filledMetricsCount} values entered
+                        </span>
+                      )}
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      Enter structured numeric values below. These enable privacy-preserving machine learning — only anonymized numbers are used, never patient identity.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {healthMetrics.length === 0 && (
+                      <div className="text-center py-4 text-sm text-muted-foreground">
+                        <p>No metric presets for this category. Click "Add Metric" to enter custom values.</p>
+                      </div>
+                    )}
+
+                    {healthMetrics.map((metric, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                          <Input
+                            value={metric.name}
+                            onChange={(e) => updateMetric(index, 'name', e.target.value)}
+                            placeholder="Metric name"
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="w-32">
+                          <Input
+                            type="number"
+                            step="any"
+                            value={metric.value}
+                            onChange={(e) => updateMetric(index, 'value', e.target.value)}
+                            placeholder={metric.placeholder || 'Value'}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="w-20">
+                          <Input
+                            value={metric.unit}
+                            onChange={(e) => updateMetric(index, 'unit', e.target.value)}
+                            placeholder="Unit"
+                            className="text-sm text-muted-foreground"
+                          />
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-600"
+                          onClick={() => removeMetric(index)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    <Button type="button" variant="outline" size="sm" onClick={addMetric} className="w-full border-dashed">
+                      <Plus className="h-3 w-3 mr-1" /> Add Metric
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="notes">Additional Notes</Label>
                 <Textarea
@@ -409,12 +529,7 @@ function DiagnosticForm() {
                 <Button type="submit" disabled={loading} className="flex-1">
                   {loading ? "Creating Report..." : "Create Report"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate(`/diagnostic/${hhNumber}`)}
-                  className="flex-1"
-                >
+                <Button type="button" variant="outline" onClick={() => navigate(`/diagnostic/${hhNumber}`)} className="flex-1">
                   Cancel
                 </Button>
               </div>

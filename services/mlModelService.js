@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const pinataService = require("./pinataService");
+const featureExtractor = require("./medicalRecordFeatureExtractor");
 
 /**
  * ML Model Service for Federated Learning
@@ -14,6 +15,21 @@ const pinataService = require("./pinataService");
 const ML_BACKEND_DIR = path.join(__dirname, "..", "ml-backend");
 const MODEL_CACHE = new Map();
 
+// In-memory training status tracking for real-time progress
+const TRAINING_STATUS = new Map();
+
+function getTrainingStatus(modelId) {
+    return TRAINING_STATUS.get(modelId) || null;
+}
+
+function setTrainingStatus(modelId, data) {
+    TRAINING_STATUS.set(modelId, { ...data, updatedAt: Date.now() });
+}
+
+function clearTrainingStatus(modelId) {
+    TRAINING_STATUS.delete(modelId);
+}
+
 // ============================================
 // LOCAL MODEL TRAINING
 // ============================================
@@ -21,20 +37,77 @@ const MODEL_CACHE = new Map();
 /**
  * Train a local model on hospital's data
  * @param {string} disease - Disease type (diabetes, cvd, cancer, pneumonia)
- * @param {Array} patientData - Local patient data
- * @param {Object} globalModel - Current global model (optional)
- * @param {Object} config - Training configuration
+ * @param {Object} options - Training options
+ * @param {string} options.dataSource - 'kaggle' | 'medical_records' | 'combined'
+ * @param {number} options.sampleCount - Max samples to use
+ * @param {string} options.modelId - Model ID for progress tracking
+ * @param {Object} options.globalModel - Current global model (optional)
+ * @param {Object} options.config - Training configuration
  * @returns {Promise<Object>} Trained model and metrics
  */
-async function trainLocalModel(disease, patientData, globalModel = null, config = {}) {
+async function trainLocalModel(disease, options = {}) {
+    const {
+        dataSource = 'kaggle',
+        sampleCount = null,
+        modelId = null,
+        globalModel = null,
+        config = {}
+    } = options;
+
     try {
         console.log(`🏥 [PRODUCTION] Training local ${disease} model via Python Backend...`);
+        console.log(`📊 Data source: ${dataSource}, Sample limit: ${sampleCount || 'all'}`);
+
+        if (modelId) {
+            setTrainingStatus(modelId, {
+                status: 'preparing',
+                progress: 5,
+                step: 'Preparing data',
+                eta: null
+            });
+        }
+
+        // Prepare custom data from medical records if needed
+        let customData = null;
+        if (dataSource === 'medical_records' || dataSource === 'combined') {
+            try {
+                const extracted = await featureExtractor.extractFeaturesForDisease(disease);
+                if (extracted.features.length > 0) {
+                    customData = {
+                        features: extracted.features,
+                        featureNames: extracted.featureNames,
+                        recordCount: extracted.recordCount
+                    };
+                    console.log(`📊 Extracted ${extracted.features.length} feature vectors from medical records`);
+                } else {
+                    console.warn(`⚠️ No medical record features available for ${disease}`);
+                    if (dataSource === 'medical_records') {
+                        throw new Error(`No medical record data available for ${disease}. Please submit diagnostic reports with health metrics first.`);
+                    }
+                }
+            } catch (extractErr) {
+                if (dataSource === 'medical_records') throw extractErr;
+                console.warn(`⚠️ Medical record extraction failed, falling back to Kaggle only:`, extractErr.message);
+            }
+        }
+
+        if (modelId) {
+            setTrainingStatus(modelId, {
+                status: 'training',
+                progress: 15,
+                step: 'Loading dataset',
+                eta: null
+            });
+        }
 
         // Prepare data for Python
         const inputData = {
             disease,
-            data: patientData,
+            data: null,
             globalModel: globalModel,
+            dataSource,
+            sampleCount: sampleCount || null,
+            customData: customData,
             config: {
                 max_iter: config.epochs || 1000,
                 C: config.C || 1.0,
@@ -42,12 +115,40 @@ async function trainLocalModel(disease, patientData, globalModel = null, config 
             }
         };
 
+        if (modelId) {
+            setTrainingStatus(modelId, {
+                status: 'training',
+                progress: 30,
+                step: 'Training model',
+                eta: null
+            });
+        }
+
         // Call Python ML backend
         const result = await callPythonML("train_model.py", inputData);
 
         if (result.error) {
+            if (modelId) {
+                setTrainingStatus(modelId, {
+                    status: 'failed',
+                    progress: 0,
+                    step: 'Training failed',
+                    error: result.error
+                });
+            }
             console.error(`❌ ML Backend Error: ${result.error}`);
             throw new Error(`Production Training Failed: ${result.error}`);
+        }
+
+        if (modelId) {
+            setTrainingStatus(modelId, {
+                status: 'completed',
+                progress: 100,
+                step: 'Training complete',
+                accuracy: result.accuracy,
+                loss: result.loss,
+                samples: result.metrics?.samples || 0
+            });
         }
 
         console.log(`✅ Training complete - Global Accuracy: ${(result.accuracy * 100).toFixed(2)}%`);
@@ -56,13 +157,22 @@ async function trainLocalModel(disease, patientData, globalModel = null, config 
             modelWeights: result.weights,
             accuracy: result.accuracy,
             loss: result.loss,
-            samplesTrained: result.metrics?.samples || patientData.length,
+            samplesTrained: result.metrics?.samples || sampleCount || 100,
             trainingTime: result.trainingTime,
-            metrics: result.metrics
+            metrics: result.metrics,
+            dataSource
         };
 
     } catch (error) {
         console.error(`❌ CRITICAL: Local training failed for ${disease}:`, error.message);
+        if (modelId) {
+            setTrainingStatus(modelId, {
+                status: 'failed',
+                progress: 0,
+                step: 'Training failed',
+                error: error.message
+            });
+        }
         // NO FALLBACK in production grade system
         throw error;
     }
@@ -442,6 +552,11 @@ module.exports = {
     // IPFS
     uploadModelToIPFS,
     downloadModelFromIPFS,
+
+    // Training Status
+    getTrainingStatus,
+    setTrainingStatus,
+    clearTrainingStatus,
 
     // Utilities
     checkPythonBackend

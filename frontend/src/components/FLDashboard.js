@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { useAuth } from '../context/AuthContext';
 import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Trash2, AlertCircle, CheckCircle2, X, BarChart2, LineChart as LineChartIcon } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
+import DatasetSelectionModal from './DatasetSelectionModal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
 
 const API_URL = '/fl';
@@ -74,6 +75,7 @@ function FLDashboard() {
         network: 'Polygon Amoy'
     });
     const [activeDashboardTab, setActiveDashboardTab] = useState('training'); // 'training' or 'ready'
+    const [trainingModalModel, setTrainingModalModel] = useState(null); // { modelId, disease }
 
     const fetchModelMetrics = async (modelId) => {
         try {
@@ -518,7 +520,10 @@ function FLDashboard() {
                                                     <Button
                                                         className="w-full font-black shadow-lg h-12 rounded-xl text-md transition-all active:scale-95 bg-gradient-to-r from-primary to-primary/80"
                                                         disabled={loading || trainingModels[model.model_id]}
-                                                        onClick={() => handleInitiateRound(model.model_id)}
+                                                        onClick={async () => {
+                                                            await handleInitiateRound(model.model_id);
+                                                            setTrainingModalModel({ modelId: model.model_id, disease: model.disease });
+                                                        }}
                                                     >
                                                         {trainingModels[model.model_id] ? (
                                                             <><RefreshCw className="mr-2 h-5 w-5 animate-spin" /> Syncing Node...</>
@@ -532,6 +537,21 @@ function FLDashboard() {
                                     </Card>
                                 ))}
                         </div>
+                    )}
+
+                    {/* Dataset Selection & Training Modal */}
+                    {trainingModalModel && (
+                        <DatasetSelectionModal
+                            modelId={trainingModalModel.modelId}
+                            disease={trainingModalModel.disease}
+                            onClose={() => {
+                                setTrainingModalModel(null);
+                                fetchModels();
+                            }}
+                            onTrainingComplete={() => {
+                                fetchModels();
+                            }}
+                        />
                     )}
 
                     {/* Model Insights Visualization Modal */}

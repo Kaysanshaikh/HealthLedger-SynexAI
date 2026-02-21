@@ -226,10 +226,10 @@ router.post("/rounds/start", async (req, res) => {
     }
 });
 
-// Local training for FL round (using Kaggle data)
+// Local training for FL round (supports Kaggle, medical records, or combined)
 router.post("/rounds/train", async (req, res) => {
     try {
-        const { modelId, samples } = req.body;
+        const { modelId, samples, dataSource, sampleCount } = req.body;
 
         if (!modelId) {
             return res.status(400).json({ error: "Model ID required" });
@@ -246,20 +246,26 @@ router.post("/rounds/train", async (req, res) => {
         }
 
         const disease = modelResult.rows[0].disease;
+        const source = dataSource || 'kaggle';
+        const limit = sampleCount || samples || null;
 
-        console.log(`🧠 Starting local training for ${disease} model...`);
+        console.log(`🧠 Starting local training for ${disease} model (source: ${source}, limit: ${limit})...`);
 
-        // Use mlModelService to train on Kaggle data
-        // This calls the Python backend
-        const trainingResult = await mlModelService.trainLocalModel(disease);
+        // Use mlModelService to train with selected data source
+        const trainingResult = await mlModelService.trainLocalModel(disease, {
+            dataSource: source,
+            sampleCount: limit,
+            modelId
+        });
 
         res.json({
             success: true,
-            modelWeights: trainingResult.weights,
+            modelWeights: trainingResult.modelWeights,
             metrics: {
                 accuracy: trainingResult.accuracy,
                 loss: trainingResult.loss,
-                samplesTrained: samples || 100 // Use provided samples or default
+                samplesTrained: trainingResult.samplesTrained,
+                dataSource: trainingResult.dataSource
             }
         });
 
@@ -268,6 +274,87 @@ router.post("/rounds/train", async (req, res) => {
         res.status(500).json({
             error: `Local training failed: ${error.message}. Ensure Kaggle datasets are present in ml-backend/datasets/`
         });
+    }
+});
+
+// ============================================
+// DATASET DISCOVERY & TRAINING STATUS
+// ============================================
+
+const featureExtractor = require("../services/medicalRecordFeatureExtractor");
+const fs = require("fs");
+const path = require("path");
+
+// List available datasets for a disease (Kaggle + medical records)
+router.get("/datasets/:disease", async (req, res) => {
+    try {
+        const { disease } = req.params;
+
+        // 1. Check Kaggle datasets
+        const datasetsDir = path.join(__dirname, "..", "ml-backend", "datasets");
+        const kaggleDatasets = [];
+
+        const datasetFiles = {
+            diabetes: 'diabetes.csv',
+            cvd: 'heart_disease_data.csv',
+            cancer: 'breast_cancer.csv'
+        };
+
+        const targetFile = datasetFiles[disease];
+        if (targetFile) {
+            const filePath = path.join(datasetsDir, targetFile);
+            if (fs.existsSync(filePath)) {
+                const stats = fs.statSync(filePath);
+                // Quick line count (approximate row count)
+                const content = fs.readFileSync(filePath, 'utf8');
+                const lines = content.split('\n').filter(l => l.trim());
+                const headers = lines[0] ? lines[0].split(',') : [];
+
+                kaggleDatasets.push({
+                    file: targetFile,
+                    rows: lines.length - 1, // subtract header
+                    columns: headers.length,
+                    columnNames: headers.map(h => h.trim()),
+                    sizeKB: Math.round(stats.size / 1024)
+                });
+            }
+        }
+
+        // 2. Check medical records
+        let medicalRecords = { totalRecords: 0, patientsContributing: 0, supported: false };
+        try {
+            medicalRecords = await featureExtractor.getFeatureQualityReport(disease);
+        } catch (err) {
+            console.warn(`⚠️ Medical record check failed for ${disease}:`, err.message);
+        }
+
+        res.json({
+            success: true,
+            disease,
+            kaggleDatasets,
+            medicalRecords
+        });
+
+    } catch (error) {
+        console.error("Dataset listing error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get training progress/status for a model
+router.get("/training/status/:modelId", async (req, res) => {
+    try {
+        const { modelId } = req.params;
+        const status = mlModelService.getTrainingStatus(modelId);
+
+        if (!status) {
+            return res.json({ success: true, status: null, message: "No active training" });
+        }
+
+        res.json({ success: true, ...status });
+    } catch (error) {
+        console.error("Training status error:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 

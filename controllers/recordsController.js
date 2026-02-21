@@ -506,7 +506,7 @@ exports.getGrantedDoctors = async (req, res) => {
 
 exports.createDiagnosticReport = async (req, res) => {
   try {
-    const { patientHHNumber, testName, testType, results, notes, ipfsCID, diagnosticHHNumber, fileName, fileType, fileSize } = req.body;
+    const { patientHHNumber, testName, testType, results, notes, ipfsCID, diagnosticHHNumber, fileName, fileType, fileSize, healthMetrics } = req.body;
 
     console.log("📋 Creating diagnostic report:", req.body);
 
@@ -517,15 +517,33 @@ exports.createDiagnosticReport = async (req, res) => {
     // Create a unique record ID based on patient HH number and timestamp
     const recordId = `diagnostic-${patientHHNumber}-${Date.now()}`;
 
+    // Map testType to disease category for ML relevancy
+    const testTypeToDiseaseCategory = {
+      'metabolic': 'diabetes',
+      'cardiovascular': 'cvd',
+      'genomics': 'cancer',
+      'respiratory': 'respiratory',
+      'lifestyle': 'general',
+      'other': 'general'
+    };
+    const diseaseCategory = testTypeToDiseaseCategory[testType] || 'general';
+
     // Create metadata JSON
     const metadata = {
       testName,
       testType,
+      diseaseCategory,
       results,
       notes: notes || "",
       diagnosticHHNumber,
       createdAt: new Date().toISOString()
     };
+
+    // Add health metrics to metadata if provided
+    if (healthMetrics && Array.isArray(healthMetrics) && healthMetrics.length > 0) {
+      metadata.healthMetrics = healthMetrics;
+      console.log(`📊 ${healthMetrics.length} structured health metrics included for ML training`);
+    }
 
     // Add file metadata if provided
     if (fileName) {
@@ -587,6 +605,24 @@ exports.createDiagnosticReport = async (req, res) => {
 
     console.log("✅ Diagnostic report indexed in database");
 
+    // Save structured health metrics to diagnostic_metrics table for ML training
+    if (healthMetrics && Array.isArray(healthMetrics) && healthMetrics.length > 0) {
+      for (const metric of healthMetrics) {
+        if (metric.name && metric.value !== undefined && metric.value !== '') {
+          try {
+            await query(
+              `INSERT INTO diagnostic_metrics (record_id, patient_hh_number, disease_category, metric_name, metric_value, metric_unit)
+               VALUES ($1, $2, $3, $4, $5, $6)`,
+              [recordId, parseInt(patientHHNumber), diseaseCategory, metric.name, parseFloat(metric.value), metric.unit || null]
+            );
+          } catch (metricErr) {
+            console.warn(`⚠️ Failed to save metric ${metric.name}:`, metricErr.message);
+          }
+        }
+      }
+      console.log(`📊 ${healthMetrics.length} health metrics saved for ML training`);
+    }
+
     // Create notification for patient
     if (patient) {
       await db.createNotification(
@@ -603,7 +639,8 @@ exports.createDiagnosticReport = async (req, res) => {
       txHash: receipt?.hash || null,
       recordId,
       status: receipt?.status || 'database-only',
-      blockchainStatus: receipt ? 'confirmed' : 'pending-blockchain'
+      blockchainStatus: receipt ? 'confirmed' : 'pending-blockchain',
+      metricsCount: (healthMetrics || []).length
     });
   } catch (error) {
     console.error("❌ Failed to create diagnostic report:", error);
