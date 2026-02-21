@@ -9,7 +9,7 @@ const BurnerWalletManager = () => {
     const { burnerWallet, generateBurnerWallet, clearBurnerWallet } = useAuth();
 
     // If we wanted to hide this in production, we could check an env var here:
-    // if (process.env.REACT_APP_ENABLE_TEST_WALLETS !== 'true') return null;
+    if (process.env.REACT_APP_ENABLE_TEST_WALLETS !== 'true') return null;
 
     return (
         <Card className="w-full mb-6 border-orange-500/30 bg-orange-500/5">
