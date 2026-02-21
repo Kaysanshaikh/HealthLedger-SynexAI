@@ -1,0 +1,69 @@
+1-Click "Burner" Test Wallets for Onboarding
+This plan outlines how to introduce "Burner Wallets" to the application. This allows users who are testing your deployed application to instantly generate a real blockchain account (EOA) directly within the app without needing to install MetaMask or acquire testnet tokens.
+
+User Review Required
+NOTE
+
+Please review the approach below.
+
+Good news: based on how your backend is architected, it uses the admin wallet (ADMIN_PRIVATE_KEY) to pay for all the gas fees for user actions (like 
+registerFLParticipantByAdmin
+).
+
+Because of this robust design, test wallets don't actually need any testnet MATIC to function in your app! They only need a private key to sign the initial login message.
+
+The Flow:
+
+User clicks "Generate Burner Wallet".
+The app uses ethers.js to instantly generate a real private key locally in the browser.
+The private key is saved to localStorage just for this session.
+When logging in, the app automatically uses this local private key to sign the login message instead of waking up MetaMask.
+The user seamlessly tests the app with a real blockchain address, zero friction.
+Pros and Cons of Burner Wallets
+Pros:
+
+Zero Friction Onboarding: Testers can start using your DApp immediately. They don't need to install MetaMask, create a seed phrase, or understand how to switch networks to Polygon Amoy.
+No Faucets Needed: Because your backend Admin wallet pays the gas for participant registration (and other critical actions), testers never have to go hunt down testnet MATIC from a faucet.
+Real EOA Addresses: They are authentic cryptographic Ethereum Externally Owned Accounts (EOAs), fully compatible with your backend's ethers.verifyMessage signature checks.
+Cons / Limitations:
+
+Session Lifecycle: The burner wallet is stored in the browser's localStorage. This means it lasts exactly as long as the user doesn't clear their browser cache. If they switch browsers (e.g., from Chrome to Safari) or clear their cookies/site data, they will generate a new burner wallet and lose access to the previous one (and any FL contributions tied to the old address).
+
+No Funds Export: Because the user never sees the private key (it's hidden in the background), if they were to somehow earn real MATIC or tokens on this test address, they cannot easily export it to a real wallet. It is strictly a "throwaway" account for testing.
+
+Not Suitable for Production: While perfect for user testing on playtest and dev environments, you would absolutely turn this off for the final live prod release, relying purely on MetaMask for real security.
+
+Backend Relayer Support: The backend admin wallet (ADMIN_ADDRESS) now has the permission to register wallet addresses on their behalf in the smart contract. This allows burner wallets to be registered without needing to hold MATIC themselves, as the backend admin pays for the gas.
+
+Smart Contract Redeployment: A new version of the HealthLedger contract has been deployed to support this relayer logic.
+
+Proposed Changes
+Frontend Context
+[MODIFY] AuthContext.js (frontend/src/context/AuthContext.js)
+Add state for a burnerWallet (loading from localStorage).
+Add a function generateBurnerWallet() that uses ethers.Wallet.createRandom() to create a new wallet, saving the private key and address to localStorage.
+Add a function clearBurnerWallet() to revert to requiring MetaMask.
+Update getWalletAddress() and 
+login()
+: If a burner wallet is active, use ethers.Wallet(privateKey).signMessage() to authenticate instantly. Otherwise, fall back to MetaMask as usual.
+Frontend Components
+[NEW] BurnerWalletManager (frontend/src/components/BurnerWalletManager.js)
+A new small UI component (e.g., a card or a floating button) that displays the current active Burner Wallet (if any), and provides a button to "Generate Temporary Burner Wallet" or "Clear Wallet (Use MetaMask)".
+[MODIFY] PatientRegistration.js, DoctorRegistration.js, AdminLogin.js, and views
+Add the 
+BurnerWalletManager
+ component so users can easily generate a testing wallet right before submitting a registration or logging in.
+Backend Configuration
+[MODIFY] .env (/.env)
+Update CONTRACT_ADDRESS to the new relayer-enabled contract address: 0x90C51BB9EbA91F1A8D3215539CF15BbA7aeE6d11.
+[MODIFY] utils/validation.js (/utils/validation.js)
+Update user-friendly error messages to reflect the new relayer-enabled logic.
+Verification Plan
+Manual Verification
+Go to the Patient Registration page.
+Click "Generate Temporary Burner Wallet".
+Fill out the form. The wallet address should automatically populate.
+Submit the registration.
+Go to the Login page.
+The burner wallet should automatically sign the login message and authenticate successfully without triggering MetaMask.
+Click "Clear Wallet (Use MetaMask)" to ensure MetaMask functionality is restored.
