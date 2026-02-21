@@ -79,8 +79,17 @@ def train(input_data):
         
         # Apply sample count limit
         if sample_count and sample_count < len(X_all):
-            X_all = X_all[:sample_count]
-            y_all = y_all[:sample_count]
+            # Sample with class balancing constraint (attempt stratify if classes known/available)
+            try:
+                # Need to import train_test_split to do stratified sampling easily
+                from sklearn.model_selection import train_test_split
+                X_all, _, y_all, _ = train_test_split(X_all, y_all, train_size=sample_count, stratify=y_all, random_state=42)
+            except ValueError:
+                # If only 1 class or not enough members, fall back to random
+                indices = np.random.choice(len(X_all), sample_count, replace=False)
+                X_all = X_all[indices]
+                y_all = y_all[indices]
+            
             logger.info(f"📊 Limited to {sample_count} samples")
         
         # Ensure numpy arrays

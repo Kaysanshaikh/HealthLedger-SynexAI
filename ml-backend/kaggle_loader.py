@@ -40,8 +40,10 @@ def load_dataset(disease_type, data_path="datasets/", sample_count=None):
 
     # Apply sample count limit if specified
     if sample_count and sample_count < len(X):
-        X = X.head(sample_count)
-        y = y.head(sample_count)
+        # Sample randomly to preserve class balance instead of taking the head
+        indices = np.random.choice(len(X), sample_count, replace=False)
+        X = X.iloc[indices]
+        y = y.iloc[indices]
 
     # Scale the features
     scaler = StandardScaler()
@@ -50,7 +52,7 @@ def load_dataset(disease_type, data_path="datasets/", sample_count=None):
     return X_scaled, y
 
 def get_train_test_split(X, y, test_size=0.2):
-    return train_test_split(X, y, test_size=test_size, random_state=42)
+    return train_test_split(X, y, test_size=test_size, random_state=42, stratify=y)
 
 def list_datasets(data_path="datasets/"):
     """
