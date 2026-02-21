@@ -9,6 +9,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { AlertTriangle } from "lucide-react";
+import BurnerWalletManager from "./BurnerWalletManager";
 
 // Phone number validation for multiple countries
 const isValidPhoneNumber = (phone) => {
@@ -38,7 +39,7 @@ const isValidPhoneNumber = (phone) => {
 
 const DiagnosticRegistry = () => {
   const navigate = useNavigate();
-  const { getWalletAddress } = useAuth();
+  const { getWalletAddress, burnerWallet } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -63,7 +64,7 @@ const DiagnosticRegistry = () => {
       }
     };
     fetchWalletAddress();
-  }, [getWalletAddress]);
+  }, [getWalletAddress, burnerWallet]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -149,6 +150,8 @@ const DiagnosticRegistry = () => {
             <CardTitle className="text-2xl font-bold text-center">Diagnostic Center Registration</CardTitle>
           </CardHeader>
           <CardContent>
+            <BurnerWalletManager />
+
             {error && (
               <Alert variant="destructive" className="mb-4">
                 <AlertTriangle className="h-4 w-4" />

@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import BurnerWalletManager from "./BurnerWalletManager";
 
 const DiagnosticLogin = () => {
   const navigate = useNavigate();
@@ -51,6 +52,7 @@ const DiagnosticLogin = () => {
             <CardDescription className="text-center">Enter your Health Hero Number to proceed</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <BurnerWalletManager />
             {error && (
               <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">
                 <p>{error}</p>

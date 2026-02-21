@@ -5,6 +5,7 @@ import NavBar from "./NavBar";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ShieldCheck, AlertCircle } from 'lucide-react';
+import BurnerWalletManager from "./BurnerWalletManager";
 
 const AdminLogin = () => {
     const [loading, setLoading] = useState(false);
@@ -41,6 +42,7 @@ const AdminLogin = () => {
                         <CardTitle className="text-2xl">Admin Login</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <BurnerWalletManager />
                         <p className="text-center text-muted-foreground">
                             Connect your MetaMask wallet to access the Federated Learning Dashboard.
                         </p>

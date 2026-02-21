@@ -39,7 +39,7 @@ const isValidPhoneNumber = (phone) => {
 
 const DoctorRegistry = () => {
   const navigate = useNavigate();
-  const { getWalletAddress } = useAuth();
+  const { getWalletAddress, burnerWallet } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     specialization: "",
@@ -65,7 +65,7 @@ const DoctorRegistry = () => {
       }
     };
     fetchWalletAddress();
-  }, [getWalletAddress]);
+  }, [getWalletAddress, burnerWallet]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
