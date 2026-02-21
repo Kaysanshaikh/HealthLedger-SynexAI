@@ -108,8 +108,7 @@ def train(input_data):
         model = LogisticRegression(
             max_iter=config.get("max_iter", 1000),
             C=config.get("C", 1.0),
-            solver='lbfgs',
-            multi_class='auto'
+            solver='lbfgs'
         )
         
         # Train model
