@@ -520,7 +520,7 @@ async function callPythonML(scriptName, inputData) {
         try {
             const shell = new PythonShell(scriptName, {
                 mode: 'text',
-                pythonPath: 'python3',
+                pythonPath: process.env.PYTHON_PATH || (process.platform === 'win32' ? 'python' : 'python3'),
                 pythonOptions: ['-u'], // Unbuffered output
                 scriptPath: ML_BACKEND_DIR
             });
