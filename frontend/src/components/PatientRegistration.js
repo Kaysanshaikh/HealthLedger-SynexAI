@@ -10,6 +10,7 @@ import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { AlertTriangle } from "lucide-react";
+import BurnerWalletManager from "./BurnerWalletManager";
 
 // Phone number validation for multiple countries
 const isValidPhoneNumber = (phone) => {
@@ -179,6 +180,8 @@ const PatientRegistry = () => {
             <CardTitle className="text-2xl font-bold text-center">Patient Registration</CardTitle>
           </CardHeader>
           <CardContent>
+            <BurnerWalletManager />
+
             {error && (
               <Alert variant="destructive" className="mb-4">
                 <AlertTriangle className="h-4 w-4" />

@@ -1,10 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import NavBar from "./NavBar";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { User, Stethoscope, Beaker, ShieldCheck } from 'lucide-react';
+import BurnerWalletManager from "./BurnerWalletManager";
 
 const LoginCard = ({ icon, title, onClick, index }) => (
   <motion.div
@@ -47,6 +47,9 @@ const LoginPage = () => {
         >
           Securely access our Federated Learning network. Choose your role below to begin contributing to medical intelligence.
         </motion.p>
+        <div className="w-full max-w-2xl mb-8">
+          <BurnerWalletManager />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-7xl">
           <LoginCard
             index={0}

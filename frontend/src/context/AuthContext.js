@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import Web3 from "web3";
+import { ethers } from "ethers";
 import client from "../api/client";
 
 const STORAGE_KEY_TOKEN = "hl_token";
 const STORAGE_KEY_USER = "hl_user";
+const STORAGE_KEY_BURNER_PK = "hl_burner_pk";
 
 const AuthContext = createContext();
 
@@ -13,6 +15,13 @@ export const AuthProvider = ({ children }) => {
     const cached = localStorage.getItem(STORAGE_KEY_USER);
     return cached ? JSON.parse(cached) : null;
   });
+
+  // Burner wallet state
+  const [burnerWallet, setBurnerWallet] = useState(() => {
+    const pk = localStorage.getItem(STORAGE_KEY_BURNER_PK);
+    return pk ? new ethers.Wallet(pk) : null;
+  });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -32,6 +41,20 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  // --- Burner Wallet Management ---
+  const generateBurnerWallet = useCallback(() => {
+    const wallet = ethers.Wallet.createRandom();
+    localStorage.setItem(STORAGE_KEY_BURNER_PK, wallet.privateKey);
+    setBurnerWallet(wallet);
+    return wallet;
+  }, []);
+
+  const clearBurnerWallet = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY_BURNER_PK);
+    setBurnerWallet(null);
+  }, []);
+  // --------------------------------
+
   const login = async ({ role, hhNumber }) => {
     setLoading(true);
     setError(null);
@@ -49,47 +72,64 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log("🔐 Starting login process...", { role, hhNumber });
 
-      // Check if MetaMask is installed
-      if (!window.ethereum) {
-        throw new Error("MetaMask is not installed. Please install MetaMask extension to continue.");
-      }
+      let walletAddress;
+      let signature;
+      let message;
 
-      // Check if MetaMask is unlocked
-      try {
-        const accounts = await window.ethereum.request({ method: "eth_accounts" });
-        if (accounts.length === 0) {
-          console.log("MetaMask is locked or no accounts connected");
+      if (burnerWallet) {
+        // --- BURNER WALLET FLOW ---
+        console.log("🔥 Using Burner Wallet for Login...");
+        walletAddress = burnerWallet.address;
+        message = `Welcome to HealthLedger SynexAI!\n\nSign this message to log in as a ${role}.\n\nWallet: ${walletAddress}`;
+
+        console.log("✍️ Signing message with Burner Wallet...");
+        // Ethers.js Wallet signMessage
+        signature = await burnerWallet.signMessage(message);
+
+      } else {
+        // --- METAMASK FLOW ---
+        // Check if MetaMask is installed
+        if (!window.ethereum) {
+          throw new Error("MetaMask is not installed. Please install MetaMask extension to continue.");
         }
-      } catch (err) {
-        console.log("Could not check MetaMask status");
+
+        // Check if MetaMask is unlocked
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_accounts" });
+          if (accounts.length === 0) {
+            console.log("MetaMask is locked or no accounts connected");
+          }
+        } catch (err) {
+          console.log("Could not check MetaMask status");
+        }
+
+        // 1. Get accounts with timeout
+        console.log("📱 Requesting MetaMask accounts...");
+        const accounts = await timeout(
+          30000, // 30 second timeout
+          window.ethereum.request({ method: "eth_requestAccounts" }),
+          "MetaMask connection timeout. Please unlock MetaMask and try again."
+        );
+
+        if (!accounts || accounts.length === 0) {
+          throw new Error("No wallet accounts found. Please unlock MetaMask.");
+        }
+
+        walletAddress = accounts[0];
+        console.log("✅ Wallet connected:", walletAddress);
+
+        // 2. Create message to sign
+        message = `Welcome to HealthLedger SynexAI!\n\nSign this message to log in as a ${role}.\n\nWallet: ${walletAddress}`;
+        const web3 = new Web3(window.ethereum);
+
+        // 3. Sign message with timeout
+        console.log("✍️ Requesting signature from MetaMask...");
+        signature = await timeout(
+          60000, // 60 second timeout for signing
+          web3.eth.personal.sign(message, walletAddress, ''),
+          "Signature request timeout. Please check MetaMask and try again."
+        );
       }
-
-      // 1. Get accounts with timeout
-      console.log("📱 Requesting MetaMask accounts...");
-      const accounts = await timeout(
-        30000, // 30 second timeout
-        window.ethereum.request({ method: "eth_requestAccounts" }),
-        "MetaMask connection timeout. Please unlock MetaMask and try again."
-      );
-
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No wallet accounts found. Please unlock MetaMask.");
-      }
-
-      const walletAddress = accounts[0];
-      console.log("✅ Wallet connected:", walletAddress);
-
-      // 2. Create message to sign
-      const message = `Welcome to HealthLedger SynexAI!\n\nSign this message to log in as a ${role}.\n\nWallet: ${walletAddress}`;
-      const web3 = new Web3(window.ethereum);
-
-      // 3. Sign message with timeout
-      console.log("✍️ Requesting signature from MetaMask...");
-      const signature = await timeout(
-        60000, // 60 second timeout for signing
-        web3.eth.personal.sign(message, walletAddress, ''),
-        "Signature request timeout. Please check MetaMask and try again."
-      );
       console.log("✅ Message signed successfully");
 
       // 4. Verify on backend
@@ -141,6 +181,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const getWalletAddress = useCallback(async () => {
+    if (burnerWallet) {
+      return burnerWallet.address;
+    }
+
     if (!window.ethereum) {
       throw new Error("MetaMask is not installed. Please install MetaMask extension.");
     }
@@ -180,6 +224,10 @@ export const AuthProvider = ({ children }) => {
       user,
       walletAddress: user?.walletAddress,
       isAuthenticated: Boolean(token && user),
+      burnerWallet,
+      isUsingBurnerWallet: Boolean(burnerWallet),
+      generateBurnerWallet,
+      clearBurnerWallet,
       login,
       logout,
       loading,
@@ -187,7 +235,7 @@ export const AuthProvider = ({ children }) => {
       clearError: () => setError(null),
       getWalletAddress,
     }),
-    [token, user, loading, error, getWalletAddress]
+    [token, user, loading, error, getWalletAddress, burnerWallet, generateBurnerWallet, clearBurnerWallet]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
