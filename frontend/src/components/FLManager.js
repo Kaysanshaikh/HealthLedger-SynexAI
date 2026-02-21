@@ -26,7 +26,6 @@ const FLManager = () => {
         disease: 'diabetes',
         modelType: 'logistic_regression'
     });
-    const [trainingModels, setTrainingModels] = useState({});
     const [activeRounds, setActiveRounds] = useState({});
     const [userContributions, setUserContributions] = useState([]);
     const [trainingModalModel, setTrainingModalModel] = useState(null); // { modelId, disease }

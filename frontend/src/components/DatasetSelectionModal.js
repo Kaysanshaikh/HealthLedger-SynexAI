@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import client from '../api/client';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { X, Database, FileText, RefreshCw, Activity, CheckCircle, AlertCircle, Zap } from 'lucide-react';
 
 const API_URL = '/fl';
@@ -243,10 +243,10 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                                         onClick={() => !isDisabled && !isCombinedDisabled && setDataSource(opt.id)}
                                                         disabled={isDisabled || isCombinedDisabled}
                                                         className={`p-4 rounded-xl border-2 text-left transition-all ${dataSource === opt.id
-                                                                ? 'border-primary bg-primary/5 shadow-md'
-                                                                : isDisabled || isCombinedDisabled
-                                                                    ? 'border-muted bg-muted/20 opacity-50 cursor-not-allowed'
-                                                                    : 'border-border hover:border-primary/40 cursor-pointer'
+                                                            ? 'border-primary bg-primary/5 shadow-md'
+                                                            : isDisabled || isCombinedDisabled
+                                                                ? 'border-muted bg-muted/20 opacity-50 cursor-not-allowed'
+                                                                : 'border-border hover:border-primary/40 cursor-pointer'
                                                             }`}
                                                     >
                                                         <Icon className={`h-5 w-5 mb-2 ${dataSource === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
