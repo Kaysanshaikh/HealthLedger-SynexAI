@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import client from '../api/client';
 import NavBarLogout from './NavBarLogout';
 import { Button } from './ui/button';
@@ -8,12 +8,12 @@ import { useAuth } from '../context/AuthContext';
 import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Trash2, AlertCircle, CheckCircle2, X, BarChart2, LineChart as LineChartIcon } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import DatasetSelectionModal from './DatasetSelectionModal';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const API_URL = '/fl';
 
 function FLDashboard() {
-    const navigate = useNavigate();
+
     const { user } = useAuth();
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);

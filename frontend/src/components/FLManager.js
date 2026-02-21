@@ -200,7 +200,7 @@ const FLManager = () => {
     const handleCompleteRound = async (roundId) => {
         try {
             setLoading(true);
-            const res = await client.post(`${API_URL}/rounds/complete`, { roundId });
+            await client.post(`${API_URL}/rounds/complete`, { roundId });
             showNotification('success', '✅ Success!', `Round ${roundId} completed and aggregated successfully!`);
             await fetchModels();
         } catch (err) {

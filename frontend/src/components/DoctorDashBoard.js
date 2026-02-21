@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { User, Users, Brain } from 'lucide-react';
+import { User, Users } from 'lucide-react';
 import client from "../api/client";
 
 const DoctorDashBoardPage = () => {

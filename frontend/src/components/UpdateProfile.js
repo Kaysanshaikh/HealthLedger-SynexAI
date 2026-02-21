@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+
 import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -14,7 +14,7 @@ import client from "../api/client";
 const UpdateProfile = () => {
   const { hhNumber } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -31,9 +31,9 @@ const UpdateProfile = () => {
 
   useEffect(() => {
     fetchProfile();
-  }, [hhNumber]);
+  }, [fetchProfile]);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
       const response = await client.get(`/users/patient/${hhNumber}`);
@@ -54,7 +54,7 @@ const UpdateProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [hhNumber]);
 
   const handleChange = (e) => {
     setFormData({

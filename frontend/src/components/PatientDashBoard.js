@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { User, FileText, Shield, Brain } from 'lucide-react';
+import { User, FileText, Shield } from 'lucide-react';
 import client from "../api/client";
 import FLManager from "./FLManager";
 
