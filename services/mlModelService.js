@@ -94,8 +94,8 @@ async function trainLocalModel(disease, options = {}) {
         if (modelId) {
             setTrainingStatus(modelId, {
                 status: 'training',
-                progress: 15,
-                step: 'Loading dataset',
+                progress: 10,
+                step: 'Checking data sources',
                 eta: null
             });
         }
@@ -118,14 +118,38 @@ async function trainLocalModel(disease, options = {}) {
         if (modelId) {
             setTrainingStatus(modelId, {
                 status: 'training',
-                progress: 30,
-                step: 'Training model',
+                progress: 20,
+                step: 'Starting Python ML engine',
                 eta: null
             });
         }
 
+        // Simulate progress ticking while Python subprocess runs
+        // (Python cold-start on Render takes 2-3 min for numpy/sklearn imports)
+        let progressValue = 20;
+        const progressInterval = modelId ? setInterval(() => {
+            if (progressValue < 85) {
+                progressValue += 2;
+                const stepLabel = progressValue < 40 ? 'Loading Python ML libraries'
+                    : progressValue < 55 ? 'Loading dataset'
+                        : progressValue < 70 ? 'Training model'
+                            : 'Evaluating model';
+                setTrainingStatus(modelId, {
+                    status: 'training',
+                    progress: progressValue,
+                    step: stepLabel,
+                    eta: null
+                });
+            }
+        }, 3000) : null;
+
         // Call Python ML backend
-        const result = await callPythonML("train_model.py", inputData);
+        let result;
+        try {
+            result = await callPythonML("train_model.py", inputData);
+        } finally {
+            if (progressInterval) clearInterval(progressInterval);
+        }
 
         if (result.error) {
             if (modelId) {

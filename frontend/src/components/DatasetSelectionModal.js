@@ -12,7 +12,7 @@ const DATA_SOURCE_OPTIONS = [
     { id: 'combined', label: 'Combined', icon: Zap, description: 'Merge both sources' },
 ];
 
-const TRAINING_STEPS = ['Preparing data', 'Loading dataset', 'Training model', 'Evaluating', 'Training complete'];
+const TRAINING_STEPS = ['Checking data', 'Loading libraries', 'Loading dataset', 'Training', 'Complete'];
 
 function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }) {
     const [dataSource, setDataSource] = useState('kaggle');
@@ -123,7 +123,12 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
     const medical = datasetInfo?.medicalRecords;
     const maxSamples = kaggle?.rows || 1000;
 
-    const progressStepIndex = TRAINING_STEPS.findIndex(s => progress.step?.includes(s));
+    // Map progress % to step index
+    const progressStepIndex = progress.progress < 10 ? 0
+        : progress.progress < 35 ? 1
+            : progress.progress < 55 ? 2
+                : progress.progress < 85 ? 3
+                    : 4;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
