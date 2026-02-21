@@ -81,7 +81,7 @@ contract HealthLedgerFL is HealthLedger {
     bytes32[] public modelIds;
     uint256 public roundCounter;
     uint256 public minParticipantsGlobal = 1;
-    uint256 public roundTimeout = 3600; // 1 hour in seconds
+    uint256 public roundTimeout = 86400; // 24 hours in seconds
     
     // ============================================
     // EVENTS
