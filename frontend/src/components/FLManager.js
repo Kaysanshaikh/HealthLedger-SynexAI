@@ -445,14 +445,9 @@ const FLManager = () => {
                                             ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-50 cursor-default'
                                             : 'bg-primary hover:bg-primary/90 shadow-primary/20'}`}
                                         onClick={() => handleOpenTrainingModal(model.model_id)}
-                                        disabled={trainingModels[model.model_id] || hasContributed || (!isParticipant && user?.role !== 'admin')}
+                                        disabled={hasContributed || (!isParticipant && user?.role !== 'admin')}
                                     >
-                                        {trainingModels[model.model_id] ? (
-                                            <div className="flex items-center gap-2">
-                                                <RefreshCw className="h-4 w-4 animate-spin" />
-                                                <span>Training Locally...</span>
-                                            </div>
-                                        ) : !isParticipant && user?.role !== 'admin' ? (
+                                        {!isParticipant && user?.role !== 'admin' ? (
                                             <div className="flex items-center gap-2">
                                                 <AlertCircle className="h-4 w-4" />
                                                 <span>Register to Contribute</span>
