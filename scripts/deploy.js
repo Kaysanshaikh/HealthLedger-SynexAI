@@ -9,12 +9,12 @@ async function main() {
   const net = await ethers.provider.getNetwork();
   console.log('Network:', net.name, Number(net.chainId));
 
-  const Factory = await ethers.getContractFactory('HealthLedger');
+  const Factory = await ethers.getContractFactory('HealthLedgerFL');
   const contract = await Factory.deploy(admin);
   await contract.waitForDeployment();
 
   const address = await contract.getAddress();
-  console.log('HealthLedger deployed at:', address);
+  console.log('HealthLedgerFL deployed at:', address);
 }
 
 main().catch((e) => {
