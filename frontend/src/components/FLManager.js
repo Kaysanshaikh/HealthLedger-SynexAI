@@ -353,7 +353,7 @@ const FLManager = () => {
                 />
             )}
 
-            {user?.role === 'admin' && !selectingForModel && (
+            {user?.role === 'admin' && (
                 <div className="flex gap-4 mb-6">
                     <Button onClick={() => setShowCreateForm(!showCreateForm)}>
                         {showCreateForm ? <Minus className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
@@ -429,7 +429,7 @@ const FLManager = () => {
                                         )}
                                     </div>
                                 </div>
-                                <CardDescription className="text-xs font-mono">{model.model_type}</CardDescription>
+                                <p className="text-xs font-mono text-muted-foreground">{model.model_type}</p>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-1 text-xs text-muted-foreground">
