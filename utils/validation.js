@@ -183,7 +183,7 @@ exports.getUserFriendlyError = (error) => {
   }
 
   if (errorMessage.includes('Can only register yourself')) {
-    return 'You can only register using your own wallet address. Please connect your MetaMask wallet.';
+    return 'You can only register yourself or be an admin.';
   }
 
   if (errorMessage.includes('insufficient funds')) {

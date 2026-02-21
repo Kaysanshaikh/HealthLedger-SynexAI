@@ -142,21 +142,21 @@ contract HealthLedger is AccessControl {
     }
 
     function registerPatient(string calldata name, uint256 dob, string calldata gender, string calldata bloodGroup, string calldata homeAddress, string calldata email, uint256 hhNumber, address walletAddress) external {
-        require(msg.sender == walletAddress, "Can only register yourself");
+        require(msg.sender == walletAddress || hasRole(ADMIN_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Can only register yourself or be an admin");
         require(patients[hhNumber].walletAddress == address(0), "HH Number already registered");
         patients[hhNumber] = Patient(name, dob, gender, bloodGroup, homeAddress, email, walletAddress);
         _grantRole(PATIENT_ROLE, walletAddress);
     }
 
     function registerDoctor(string calldata name, string calldata specialization, string calldata hospital, string calldata email, uint256 hhNumber, address walletAddress) external {
-        require(msg.sender == walletAddress, "Can only register yourself");
+        require(msg.sender == walletAddress || hasRole(ADMIN_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Can only register yourself or be an admin");
         require(doctors[hhNumber].walletAddress == address(0), "HH Number already registered");
         doctors[hhNumber] = Doctor(name, specialization, hospital, email, walletAddress);
         _grantRole(DOCTOR_ROLE, walletAddress);
     }
 
     function registerDiagnostic(string calldata name, string calldata location, string calldata email, uint256 hhNumber, address walletAddress) external {
-        require(msg.sender == walletAddress, "Can only register yourself");
+        require(msg.sender == walletAddress || hasRole(ADMIN_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Can only register yourself or be an admin");
         require(diagnostics[hhNumber].walletAddress == address(0), "HH Number already registered");
         diagnostics[hhNumber] = Diagnostic(name, location, email, walletAddress);
         _grantRole(DIAGNOSTIC_ROLE, walletAddress);
