@@ -29,10 +29,6 @@ const UpdateProfile = () => {
     chronicConditions: ''
   });
 
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
@@ -55,6 +51,10 @@ const UpdateProfile = () => {
       setLoading(false);
     }
   }, [hhNumber]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleChange = (e) => {
     setFormData({

@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
   // --------------------------------
 
-  const login = async ({ role, hhNumber }) => {
+  const login = useCallback(async ({ role, hhNumber }) => {
     setLoading(true);
     setError(null);
 
@@ -172,7 +172,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [burnerWallet]);
 
   const logout = () => {
     setToken(null);
@@ -216,7 +216,7 @@ export const AuthProvider = ({ children }) => {
       }
       throw err;
     }
-  }, []);
+  }, [burnerWallet]);
 
   const value = useMemo(
     () => ({
@@ -235,7 +235,7 @@ export const AuthProvider = ({ children }) => {
       clearError: () => setError(null),
       getWalletAddress,
     }),
-    [token, user, loading, error, getWalletAddress, burnerWallet, generateBurnerWallet, clearBurnerWallet]
+    [token, user, loading, error, getWalletAddress, burnerWallet, generateBurnerWallet, clearBurnerWallet, login]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
