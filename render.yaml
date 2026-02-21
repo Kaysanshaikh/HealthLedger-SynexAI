@@ -17,10 +17,12 @@ services:
       - key: FRONTEND_URL
         value: "*" # Or your Render URL once deployed
       # Required Blockchain Env Vars
-      - key: RPC_URL
-        sync: false # Set manually in Render Dashboard
+      - key: POLYGON_AMOY_RPC
+        sync: false # Set manually in Render Dashboard (e.g. Alchemy/Infura URL)
       - key: PRIVATE_KEY
         sync: false # Set manually in Render Dashboard
+      - key: CONTRACT_ADDRESS
+        sync: false # Set manually in Render Dashboard (0x90C51BB9EbA91F1A8D3215539CF15BbA7aeE6d11)
       - key: PINATA_API_KEY
         sync: false # Set manually in Render Dashboard
       - key: PINATA_SECRET
