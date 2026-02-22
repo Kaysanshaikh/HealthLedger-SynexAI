@@ -13,9 +13,9 @@ const artifactPath = path.join(
 
 const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
 
-const provider = new ethers.JsonRpcProvider(process.env.POLYGON_AMOY_RPC);
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, artifact.abi, wallet);
+const provider = new ethers.JsonRpcProvider((process.env.POLYGON_AMOY_RPC || "").trim());
+const wallet = new ethers.Wallet((process.env.PRIVATE_KEY || "").trim(), provider);
+const contract = new ethers.Contract((process.env.CONTRACT_ADDRESS || "").trim(), artifact.abi, wallet);
 
 const toRecordId = (recordId) =>
   recordId.startsWith("0x") && recordId.length === 66 ? recordId : ethers.id(recordId);

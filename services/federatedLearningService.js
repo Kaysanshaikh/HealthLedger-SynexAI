@@ -30,10 +30,10 @@ function initialize() {
     try {
         artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
 
-        const rpcUrl = process.env.POLYGON_AMOY_RPC || process.env.RPC_URL || "http://127.0.0.1:8545";
+        const rpcUrl = (process.env.POLYGON_AMOY_RPC || process.env.RPC_URL || "http://127.0.0.1:8545").trim();
         provider = new ethers.JsonRpcProvider(rpcUrl);
-        wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-        contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, artifact.abi, wallet);
+        wallet = new ethers.Wallet(process.env.PRIVATE_KEY.trim(), provider);
+        contract = new ethers.Contract(process.env.CONTRACT_ADDRESS.trim(), artifact.abi, wallet);
 
         blockchainAvailable = true;
         return { provider, wallet, contract };
