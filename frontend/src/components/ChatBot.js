@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, X, Minus } from "lucide-react";
+import { X, Minus } from "lucide-react";
+import chatbotLogo from "./chatbot_logo.svg";
 
 const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -19,11 +20,11 @@ const ChatBot = () => {
                         {/* Header */}
                         <div className="p-4 bg-secondary flex items-center justify-between border-b border-foreground/5">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
-                                    <MessageSquare size={16} />
+                                <div className="w-10 h-10 rounded-xl bg-white/50 backdrop-blur-sm border border-foreground/5 flex items-center justify-center p-1.5 shadow-inner">
+                                    <img src={chatbotLogo} alt="SynexAI Logo" className="w-full h-full object-contain" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold tracking-tight">HealthLedger SynexAI Assistant</h3>
+                                    <h3 className="text-sm font-bold tracking-tight text-foreground">HealthLedger SynexAI</h3>
                                     <div className="flex items-center gap-1.5">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                                         <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Online</span>
@@ -58,9 +59,20 @@ const ChatBot = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="bg-foreground text-background p-4 rounded-full shadow-lg flex items-center justify-center border border-foreground/10 hover:bg-foreground/90 transition-colors"
+                className="bg-foreground text-background w-14 h-14 rounded-full shadow-lg flex items-center justify-center border border-foreground/10 hover:bg-foreground/90 transition-all duration-300 group overflow-hidden"
             >
-                {isOpen ? <Minus size={24} /> : <MessageSquare size={24} />}
+                {isOpen ? (
+                    <Minus size={24} />
+                ) : (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        <img
+                            src={chatbotLogo}
+                            alt="Chat"
+                            className="w-8 h-8 group-hover:scale-110 transition-transform duration-300"
+                            style={{ filter: 'invert(1) brightness(2)' }}
+                        />
+                    </div>
+                )}
             </motion.button>
         </div>
     );

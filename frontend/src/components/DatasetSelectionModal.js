@@ -162,7 +162,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
         } finally {
             setTraining(false);
         }
-    }, [modelId, dataSource, sampleCount, onTrainingComplete]);
+    }, [modelId, dataSource, sampleCount, onTrainingComplete, user]);
 
     const kaggle = datasetInfo?.kaggleDatasets?.[0];
     const medical = datasetInfo?.medicalRecords;
