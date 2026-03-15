@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { ModeToggle } from "./mode-toggle";
 import { Menu, X } from "lucide-react";
-import logo from "./logo_oval.png";
+import logo from "./logo_clean.svg";
 
 const NavBarLogout = () => {
   const navigate = useNavigate();
@@ -26,16 +26,16 @@ const NavBarLogout = () => {
         {/* Logo and Title */}
         <div className="flex items-center gap-4">
           <img
-            className="h-10 w-10 cursor-pointer border border-primary/20 shadow-sm transition-transform hover:scale-105"
+            className="h-10 w-10 cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 filter drop-shadow-md"
             src={logo}
             alt="Logo"
             onClick={() => navigate("/")}
           />
           <span
-            className="text-lg md:text-xl font-semibold cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] sm:max-w-none"
+            className="text-lg md:text-xl font-bold tracking-tight cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] sm:max-w-none bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70"
             onClick={() => navigate("/")}
           >
-            HealthLedger SynexAI
+            HealthLedger <span className="font-extrabold text-primary">SynexAI</span>
           </span>
         </div>
 
