@@ -44,39 +44,32 @@ async function generateProof(modelWeights, trainingMetrics) {
             modelWeightsHash: hashModelWeights({ weights: weightSubset, salt })
         };
 
-        // If circuit is compiled, generate real proof
+        // Generate real proof via snarkjs
         const wasmPath = path.join(CIRCUIT_DIR, "ModelTraining_js", "ModelTraining.wasm");
         const zkeyPath = path.join(CIRCUIT_DIR, "ModelTraining_final.zkey");
 
-        if (fs.existsSync(wasmPath) && fs.existsSync(zkeyPath)) {
-            const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-                inputs,
-                wasmPath,
-                zkeyPath
-            );
-
-            return {
-                proof,
-                publicSignals,
-                proofHash: ethers.id(JSON.stringify(proof)),
-                isReal: true
-            };
+        if (!fs.existsSync(wasmPath) || !fs.existsSync(zkeyPath)) {
+            throw new Error("❌ Production ZK circuits missing. Please run 'npm run fl:setup' to build the ZK infrastructure.");
         }
+        
+        const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+            inputs,
+            wasmPath,
+            zkeyPath
+        );
 
-        // Fallback for dev if circuits aren't compiled yet
-        console.warn("⚠️  Circuits not compiled. Using placeholder proof hash.");
-        const proofHash = ethers.id(JSON.stringify(inputs));
-
-        const proof = {
-            proofHash,
-            publicInputs: [inputs.accuracy, inputs.loss, inputs.samplesTrained, inputs.modelWeightsHash],
-            generatedAt: Date.now(),
-            valid: true,
-            isReal: false
+        const finalProof = {
+            proof,
+            publicSignals,
+            publicInputs: publicSignals, // mapping for verification helper
+            proofHash: ethers.id(JSON.stringify(proof)),
+            isReal: true
         };
-
-        PROOF_CACHE.set(proofHash, { ...proof, inputs });
-        return proof;
+        
+        // Cache the proof if necessary
+        PROOF_CACHE.set(finalProof.proofHash, { ...finalProof, inputs });
+        
+        return finalProof;
 
     } catch (error) {
         console.error("❌ Proof generation failed:", error.message);
@@ -123,40 +116,41 @@ async function generateProductionProof(circuitPath, inputs) {
 // ============================================
 
 /**
- * Verify a ZK proof locally (before blockchain submission)
- * @param {string} proofHash - Proof hash
- * @param {Array} publicInputs - Public inputs
+ * Verify a ZK proof locally
+ * @param {string} proofHash - Proof hash (retained for signature matching)
+ * @param {Array} publicInputs - Public inputs 
+ * @param {Object} proofObj - The actual Groth16 proof object required for real validation
  * @returns {Promise<boolean>} Verification result
  */
-async function verifyProof(proofHash, publicInputs) {
+async function verifyProof(proofHash, publicInputs, proofObj) {
     try {
-        console.log("🔍 Verifying ZK proof:", proofHash.substring(0, 10) + "...");
+        console.log("🔍 Cryptographically verifying ZK SNARK:", proofHash.substring(0, 10) + "...");
 
-        // Check cache
-        const cachedProof = PROOF_CACHE.get(proofHash);
-
-        if (!cachedProof) {
-            console.warn("⚠️  Proof not found in cache");
+        const vKeyPath = path.join(CIRCUIT_DIR, "ModelTraining_verification_key.json");
+        
+        if (!fs.existsSync(vKeyPath)) {
+            console.error("❌ Verification key missing. Run 'npm run fl:setup'");
             return false;
         }
 
-        // Verify public inputs match
-        const inputsMatch = JSON.stringify(cachedProof.publicInputs) === JSON.stringify(publicInputs);
-
-        if (!inputsMatch) {
-            console.error("❌ Public inputs mismatch");
+        if (!proofObj) {
+            console.error("❌ Raw Groth16 proof object omitted. Verification rejected.");
             return false;
         }
 
-        // In production: Verify Groth16 proof using verification key
-        // const vKey = JSON.parse(fs.readFileSync(vKeyPath));
-        // const res = await snarkjs.groth16.verify(vKey, publicInputs, proof);
+        const vKey = JSON.parse(fs.readFileSync(vKeyPath));
+        const res = await snarkjs.groth16.verify(vKey, publicInputs, proofObj);
 
-        console.log("✅ Proof verified successfully");
-        return true;
+        if (res) {
+            console.log("✅ Proof verified securely.");
+            return true;
+        } else {
+            console.error("❌ Cryptographic verification failed! Proof is invalid.");
+            return false;
+        }
 
     } catch (error) {
-        console.error("❌ Proof verification failed:", error.message);
+        console.error("❌ Proof verification error:", error.message);
         return false;
     }
 }

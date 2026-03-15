@@ -430,11 +430,14 @@ router.post("/rounds/submit", async (req, res) => {
             return res.status(500).json({ error: `Blockchain submission failed: ${blockchainError.message}` });
         }
 
-        // Store in database
+        // Verify proof cryptographically before recording
+        const isVerified = await zkProofService.verifyProof(proof.proofHash, proof.publicInputs || [], proof.proof);
+
+        // Store in database with actual verification status
         await db.query(
             `INSERT INTO fl_contributions 
-       (round_id, participant_address, model_update_ipfs, zk_proof_hash, local_accuracy, local_loss, samples_trained)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+       (round_id, participant_address, model_update_ipfs, zk_proof_hash, local_accuracy, local_loss, samples_trained, zk_proof_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [
                 roundId,
                 req.user?.walletAddress || "test-participant",
@@ -442,7 +445,8 @@ router.post("/rounds/submit", async (req, res) => {
                 proof.proofHash,
                 trainingMetrics.accuracy,
                 trainingMetrics.loss,
-                trainingMetrics.samplesTrained
+                trainingMetrics.samplesTrained,
+                isVerified
             ]
         );
 
