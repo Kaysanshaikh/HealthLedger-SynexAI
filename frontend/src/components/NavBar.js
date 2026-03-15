@@ -24,7 +24,7 @@ const NavBar = () => {
         {/* Logo and Title */}
         <div className="flex items-center gap-4">
           <img
-            className="h-10 w-24 cursor-pointer rounded-full object-cover border border-primary/20 shadow-sm"
+            className="h-10 w-10 cursor-pointer border border-primary/20 shadow-sm transition-transform hover:scale-105"
             src={logo}
             alt="Logo"
             onClick={() => navigate("/")}
