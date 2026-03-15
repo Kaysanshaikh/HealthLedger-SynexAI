@@ -40,15 +40,23 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                     setSampleCount(res.data.kaggleDatasets[0].rows);
                 }
 
-                // Check trainability if patient
+                // Check trainability if patient and data exists
                 if (user?.role === 'patient') {
-                    setTrainability(prev => ({ ...prev, loading: true }));
-                    const trainRes = await client.get(`${API_URL}/trainability-check/${disease}?hhNumber=${user.hh_number}`);
-                    setTrainability({
-                        isTrainable: trainRes.data.isTrainable,
-                        reason: trainRes.data.reason,
-                        loading: false
-                    });
+                    if (res.data.medicalRecords?.totalRecords > 0) {
+                        setTrainability(prev => ({ ...prev, loading: true }));
+                        const trainRes = await client.get(`${API_URL}/trainability-check/${disease}?hhNumber=${user.hh_number}`);
+                        setTrainability({
+                            isTrainable: trainRes.data.isTrainable,
+                            reason: trainRes.data.reason,
+                            loading: false
+                        });
+                    } else {
+                        setTrainability({
+                            isTrainable: false,
+                            reason: 'No medical records found to analyze.',
+                            loading: false
+                        });
+                    }
                 }
             } catch (err) {
                 console.error('Failed to fetch dataset info:', err);
@@ -289,7 +297,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                                 
                                                 // Disable if no data exists globally for institutions, 
                                                 // or if this specific patient is not trainable
-                                                const noGlobalData = opt.id === 'medical_records' && (!medical?.totalRecords || medical.totalRecords === 0);
+                                                const noGlobalData = isPatientSource && (!medical?.totalRecords || medical.totalRecords === 0);
                                                 const isPatientIneligible = user?.role === 'patient' && isPatientSource && !trainability.isTrainable;
                                                 
                                                 const isDisabled = noGlobalData || isPatientIneligible;

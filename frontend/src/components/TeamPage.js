@@ -14,7 +14,7 @@ const teamMembers = [
   {
     name: "Shivam Prajapati",
     role: "Associate Developer",
-    contribution: "Shivam works closely with the lead developer to implement and optimize core platform features, ensuring smooth performance across the decentralized network.",
+    contribution: "Shivam works closely with the lead architect to implement and optimize core platform features, ensuring smooth performance across the decentralized network.",
     linkedin: "https://www.linkedin.com/in/shivam-prajapati-78590b225/",
   },
   {
