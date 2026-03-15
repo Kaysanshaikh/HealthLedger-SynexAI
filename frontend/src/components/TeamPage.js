@@ -7,20 +7,20 @@ import { Linkedin } from 'lucide-react';
 const teamMembers = [
   {
     name: "Kaysan Shaikh",
-    role: "Team Leader & Lead Developer",
-    contribution: "Kaysan leads the end-to-end development of HealthLedger SynexAI, architecting the integration between blockchain security and the Federated Learning framework. He oversees the entire system lifecycle.",
+    role: "Founder & Lead Architect",
+    contribution: "Kaysan is the visionary and sole developer behind HealthLedger SynexAI. He leads the end-to-end development of HealthLedger SynexAI, architecting the integration between blockchain security and the Federated Learning framework. He oversees the entire system lifecycle.",
     linkedin: "https://www.linkedin.com/in/kaysanshaikh/",
   },
   {
     name: "Shivam Prajapati",
-    role: "Development Associate",
+    role: "Associate Developer",
     contribution: "Shivam works closely with the lead developer to implement and optimize core platform features, ensuring smooth performance across the decentralized network.",
     linkedin: "https://www.linkedin.com/in/shivam-prajapati-78590b225/",
   },
   {
     name: "Tanmay Salgaonkar",
-    role: "Tester",
-    contribution: "Tanmay  was responsible for testing the research project implementation and validating its functionality,identifying bugs, and verifying results against requirements.",
+    role: "Quality Assurance Engineer",
+    contribution: "Tanmay was responsible for testing the implementation and validating its functionality, identifying bugs, and verifying results against requirements.",
     linkedin: "https://www.linkedin.com/in/tanmay-salgaonkar-939059210/"
   },
 ];
