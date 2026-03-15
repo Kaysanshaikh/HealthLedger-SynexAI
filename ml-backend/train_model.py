@@ -5,6 +5,8 @@ import time
 import os
 import logging
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, log_loss
 from kaggle_loader import load_dataset, get_train_test_split
 
@@ -12,18 +14,80 @@ from kaggle_loader import load_dataset, get_train_test_split
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
+def create_model(model_type, config):
+    """Factory function to create the appropriate ML model based on type."""
+    if model_type == 'random_forest':
+        return RandomForestClassifier(
+            n_estimators=config.get("n_estimators", 100),
+            max_depth=config.get("max_depth", 10),
+            random_state=42
+        )
+    elif model_type == 'neural_network':
+        return MLPClassifier(
+            hidden_layer_sizes=config.get("hidden_layers", (64, 32)),
+            max_iter=config.get("max_iter", 500),
+            activation='relu',
+            solver='adam',
+            random_state=42
+        )
+    elif model_type == 'cnn':
+        # For tabular health data, CNN isn't applicable — use a deeper MLP instead
+        # True CNNs require image/spatial data (e.g., X-rays for pneumonia)
+        return MLPClassifier(
+            hidden_layer_sizes=config.get("hidden_layers", (128, 64, 32)),
+            max_iter=config.get("max_iter", 500),
+            activation='relu',
+            solver='adam',
+            random_state=42
+        )
+    else:  # Default: logistic_regression
+        return LogisticRegression(
+            max_iter=config.get("max_iter", 1000),
+            C=config.get("C", 1.0),
+            solver='lbfgs'
+        )
+
+
+def extract_weights(model, model_type):
+    """Extract model weights/parameters for federated averaging."""
+    if model_type == 'random_forest':
+        # For Random Forest, extract feature importances as a proxy for weights
+        # (true weight-level FedAvg not possible with tree ensembles)
+        return {
+            "feature_importances": model.feature_importances_.tolist(),
+            "n_estimators": model.n_estimators,
+            "feature_names": []
+        }
+    elif model_type in ('neural_network', 'cnn'):
+        # MLP weights: list of weight matrices and bias vectors per layer
+        weights = {}
+        for i, (coef, intercept) in enumerate(zip(model.coefs_, model.intercepts_)):
+            weights[f"layer_{i}_weights"] = coef.tolist()
+            weights[f"layer_{i}_bias"] = intercept.tolist()
+        weights["feature_names"] = []
+        return weights
+    else:  # logistic_regression
+        return {
+            "coef": model.coef_.tolist(),
+            "intercept": model.intercept_.tolist(),
+            "feature_names": []
+        }
+
+
 def train(input_data):
     disease = input_data.get("disease")
     if not disease:
         return {"error": "Missing disease type in input data"}
         
     config = input_data.get("config", {})
+    model_type = input_data.get("modelType", "logistic_regression")
     data_source = input_data.get("dataSource", "kaggle")
     sample_count = input_data.get("sampleCount")
     custom_data = input_data.get("customData")
     datasets_path = os.path.join(os.path.dirname(__file__), "datasets/")
     
-    logger.info(f"🚀 Starting production training for {disease} model (source: {data_source})...")
+    logger.info(f"🚀 Starting production training for {disease} model (type: {model_type}, source: {data_source})...")
     
     X_all = None
     y_all = None
@@ -113,12 +177,9 @@ def train(input_data):
     start_time = time.time()
     
     try:
-        # Initialize model with production params
-        model = LogisticRegression(
-            max_iter=config.get("max_iter", 1000),
-            C=config.get("C", 1.0),
-            solver='lbfgs'
-        )
+        # Initialize model based on type
+        model = create_model(model_type, config)
+        logger.info(f"🧠 Using model: {model.__class__.__name__}")
         
         # Train model
         model.fit(X_train, y_train)
@@ -131,15 +192,18 @@ def train(input_data):
         y_prob = model.predict_proba(X_test)
         loss = log_loss(y_test, y_prob)
         
-        # Extract weights (coefficients and intercepts)
-        weights = {
-            "coef": model.coef_.tolist(),
-            "intercept": model.intercept_.tolist(),
-            "feature_names": []
-        }
+        # Extract weights based on model type
+        weights = extract_weights(model, model_type)
         
         end_time = time.time()
         training_time = end_time - start_time
+        
+        # Get iteration count if available
+        iterations = 0
+        if hasattr(model, 'n_iter_'):
+            iterations = int(model.n_iter_[0]) if hasattr(model.n_iter_, '__len__') else int(model.n_iter_)
+        elif hasattr(model, 'n_estimators'):
+            iterations = model.n_estimators
         
         logger.info(f"✨ Training complete. Accuracy: {accuracy:.4f}, Loss: {loss:.4f}")
         
@@ -151,7 +215,8 @@ def train(input_data):
             "metrics": {
                 "samples": len(X_train),
                 "test_samples": len(X_test),
-                "iterations": int(model.n_iter_[0]),
+                "iterations": iterations,
+                "modelType": model_type,
                 "dataSource": data_source,
                 "totalAvailable": len(X_all)
             }

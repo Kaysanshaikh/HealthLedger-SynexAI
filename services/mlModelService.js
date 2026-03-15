@@ -50,6 +50,7 @@ async function trainLocalModel(disease, options = {}) {
         dataSource = 'kaggle',
         sampleCount = null,
         modelId = null,
+        modelType = 'logistic_regression',
         globalModel = null,
         hhNumber = null,
         config = {}
@@ -109,6 +110,7 @@ async function trainLocalModel(disease, options = {}) {
             disease,
             data: null,
             globalModel: globalModel,
+            modelType,
             dataSource,
             sampleCount: sampleCount || null,
             customData: customData,

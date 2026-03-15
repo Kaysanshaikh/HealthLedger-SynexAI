@@ -248,7 +248,7 @@ CREATE TABLE IF NOT EXISTS diagnostic_metrics (
     id SERIAL PRIMARY KEY,
     record_id VARCHAR(255) REFERENCES record_index(record_id) ON DELETE CASCADE,
     patient_hh_number BIGINT,
-    disease_category VARCHAR(50) CHECK (disease_category IN ('diabetes', 'cvd', 'cancer', 'respiratory', 'general')),
+    disease_category VARCHAR(50) CHECK (disease_category IN ('diabetes', 'cvd', 'cancer', 'pneumonia', 'respiratory', 'general')),
     metric_name VARCHAR(100) NOT NULL,
     metric_value DECIMAL(10,4) NOT NULL,
     metric_unit VARCHAR(20),

@@ -235,9 +235,9 @@ router.post("/rounds/train", async (req, res) => {
             return res.status(400).json({ error: "Model ID required" });
         }
 
-        // Get model details from DB to know the disease type
+        // Get model details from DB to know the disease type and model type
         const modelResult = await db.query(
-            "SELECT disease FROM fl_models WHERE model_id = $1",
+            "SELECT disease, model_type FROM fl_models WHERE model_id = $1",
             [modelId]
         );
 
@@ -246,10 +246,11 @@ router.post("/rounds/train", async (req, res) => {
         }
 
         const disease = modelResult.rows[0].disease;
+        const modelType = modelResult.rows[0].model_type;
         const source = dataSource || 'kaggle';
         const limit = sampleCount || samples || null;
 
-        console.log(`🧠 [ASYNC] Initiating local training for ${disease} model...`);
+        console.log(`🧠 [ASYNC] Initiating local training for ${disease} model (${modelType})...`);
 
         // Start training in background (non-blocking)
         // This prevents Render's HTTP request timeout (usually 30s)
@@ -257,6 +258,7 @@ router.post("/rounds/train", async (req, res) => {
             dataSource: source,
             sampleCount: limit,
             modelId,
+            modelType,
             hhNumber: req.body.hhNumber || null
         }).catch(err => {
             console.error(`❌ Background training failed for ${modelId}:`, err);

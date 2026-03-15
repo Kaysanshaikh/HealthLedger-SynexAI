@@ -465,6 +465,15 @@ function DiagnosticForm() {
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    {formData.testType === 'other' && (
+                      <div className="bg-blue-50/50 border border-blue-100 rounded-md p-3 text-xs text-blue-700 mb-3 flex items-start gap-2">
+                        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <strong>Note:</strong> Records with category "Other" are securely stored but <strong>will not be used</strong> in any Federated Learning datasets. Select a specific medical category if you want these metrics to contribute to ML model training.
+                        </div>
+                      </div>
+                    )}
+
                     {healthMetrics.length === 0 && (
                       <div className="text-center py-4 text-sm text-muted-foreground">
                         <p>No metric presets for this category. Click "Add Metric" to enter custom values.</p>
