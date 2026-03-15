@@ -24,14 +24,21 @@ exports.login = async (req, res) => {
     console.log("✅ Signature verified. Role:", normalizedRole);
     if (normalizedRole === ROLE_DOCTOR) {
       try {
-        const isDoctor = await healthLedgerService.hasDoctorRole(walletAddress);
-        if (!isDoctor) {
-          return res.status(403).json({ error: `Wallet does not have the 'doctor' role.` });
+        const isDoctorBlockchain = await healthLedgerService.hasDoctorRole(walletAddress);
+        if (!isDoctorBlockchain) {
+          console.warn("⚠️ Wallet does not have 'doctor' role on blockchain. Checking database...");
+          // Fallback: Check if user exists in database with this role
+          const dbUser = await db.getUserByWalletAndRole(walletAddress, normalizedRole);
+          if (!dbUser) {
+            return res.status(403).json({ error: "No doctor account found for this wallet. Please ensure you are registered correctly." });
+          }
+          console.log("✅ Doctor found in database, allowing login despite blockchain role discrepancy.");
+        } else {
+          console.log("✅ Doctor role verified on blockchain.");
         }
       } catch (roleError) {
         console.error("⚠️ Error checking doctor role on blockchain:", roleError.message);
-        console.log("⚠️ Skipping blockchain role check - using database only");
-        // Skip blockchain check and rely on database registration
+        console.log("⚠️ Falling back to database verification.");
       }
     }
 
