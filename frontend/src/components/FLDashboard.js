@@ -631,7 +631,8 @@ function FLDashboard() {
                                                             />
                                                             <Tooltip
                                                                 contentStyle={{ backgroundColor: 'rgba(26, 26, 26, 0.95)', border: '1px solid #333', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                                                                itemStyle={{ fontSize: '12px' }}
+                                                                itemStyle={{ fontSize: '12px', color: '#fff' }}
+                                                                labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '4px' }}
                                                             />
                                                             <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 'bold' }} />
                                                             <Line
@@ -683,6 +684,8 @@ function FLDashboard() {
                                                             <Tooltip
                                                                 cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                                                 contentStyle={{ backgroundColor: 'rgba(26, 26, 26, 0.95)', border: '1px solid #333', borderRadius: '12px' }}
+                                                                itemStyle={{ color: '#fff', fontSize: '12px' }}
+                                                                labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '4px' }}
                                                             />
                                                             <Bar
                                                                 dataKey="participants"
