@@ -35,6 +35,13 @@ def load_dataset(disease_type, data_path="datasets/", sample_count=None):
         X = df.drop(['id', 'diagnosis'], axis=1)
         y = df['diagnosis'].map({'M': 1, 'B': 0})
         
+    elif disease_type == "pneumonia":
+        # Synthetic Tabular Pneumonia Dataset
+        # Columns: FEV1, FVC, FEV1_FVC_Ratio, Respiratory_Rate, O2_Saturation, Body_Temp, etc.
+        df = pd.read_csv(f"{data_path}pneumonia.csv")
+        X = df.drop('target', axis=1)
+        y = df['target']
+        
     else:
         raise ValueError(f"Unknown disease type: {disease_type}")
 
@@ -64,7 +71,8 @@ def list_datasets(data_path="datasets/"):
     dataset_files = {
         'diabetes': 'diabetes.csv',
         'cvd': 'heart_disease_data.csv',
-        'cancer': 'breast_cancer.csv'
+        'cancer': 'breast_cancer.csv',
+        'pneumonia': 'pneumonia.csv'
     }
     
     results = []
@@ -79,7 +87,7 @@ def list_datasets(data_path="datasets/"):
                 'rows': len(df),
                 'columns': len(df.columns),
                 'column_names': df.columns.tolist(),
-                'size_kb': round(file_size, 1)
+                'size_kb': round(float(file_size), 1)
             })
     
     return results

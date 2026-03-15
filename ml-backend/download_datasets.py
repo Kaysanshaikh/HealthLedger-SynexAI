@@ -85,6 +85,60 @@ def download_datasets():
             print(f"  Failed: {e}")
     else:
         print("  breast_cancer.csv already exists, skipping.")
+
+    # 4. Pneumonia (Tabular synthesis)
+    # Since Kaggle pneumonia datasets are predominantly X-Ray images, we generate a synthetic 
+    # tabular CSV that bridges the gap for our Federated Learning numerical pipeline.
+    pneumonia_path = os.path.join(DATASETS_DIR, "pneumonia.csv")
+    if not os.path.exists(pneumonia_path):
+        print("  Synthesizing tabular pneumonia.csv dataset...")
+        try:
+            import numpy as np
+            import pandas as pd
+            np.random.seed(42)
+            n_samples = 1500
+            
+            # Generate feature distributions simulating healthy vs pneumonia patients
+            labels = np.random.choice([0, 1], size=n_samples, p=[0.6, 0.4])
+            
+            fev1 = np.where(labels == 1, np.random.normal(2.1, 0.4, n_samples), np.random.normal(3.5, 0.5, n_samples))
+            fvc = np.where(labels == 1, np.random.normal(2.5, 0.5, n_samples), np.random.normal(4.2, 0.6, n_samples))
+            fev1_fvc = fev1 / fvc
+            resp_rate = np.where(labels == 1, np.random.normal(24, 3, n_samples), np.random.normal(16, 2, n_samples))
+            o2_sat = np.where(labels == 1, np.random.normal(92, 2.5, n_samples), np.random.normal(98, 1, n_samples))
+            body_temp = np.where(labels == 1, np.random.normal(38.5, 0.6, n_samples), np.random.normal(36.8, 0.3, n_samples))
+            wbc_count = np.where(labels == 1, np.random.normal(14.5, 2.5, n_samples), np.random.normal(7.5, 1.5, n_samples))
+            crp = np.where(labels == 1, np.random.normal(85, 25, n_samples), np.random.normal(5, 3, n_samples))
+            cough = np.where(labels == 1, np.random.uniform(5, 10, n_samples), np.random.uniform(0, 3, n_samples))
+            chest_pain = np.where(labels == 1, np.random.uniform(3, 8, n_samples), np.random.uniform(0, 2, n_samples))
+            
+            # Cap realistic ranges
+            o2_sat = np.clip(o2_sat, 70, 100)
+            cough = np.clip(np.round(cough), 0, 10)
+            chest_pain = np.clip(np.round(chest_pain), 0, 10)
+            
+            df_pneumonia = pd.DataFrame({
+                'FEV1': fev1,
+                'FVC': fvc,
+                'FEV1_FVC_Ratio': fev1_fvc,
+                'Respiratory_Rate': resp_rate,
+                'O2_Saturation': o2_sat,
+                'Body_Temp': body_temp,
+                'WBC_Count': wbc_count,
+                'CRP_Level': crp,
+                'Cough_Severity': cough,
+                'Chest_Pain_Scale': chest_pain,
+                'target': labels
+            })
+            
+            df_pneumonia.to_csv(pneumonia_path, index=False)
+            print(f"  pneumonia.csv synthesized ({os.path.getsize(pneumonia_path):,} bytes)")
+        except ImportError:
+            print("  Failed: pandas/numpy not installed. Cannot synthesize tabular pneumonia dataset.")
+        except Exception as e:
+            print(f"  Failed generating pneumonia data: {e}")
+    else:
+        print("  pneumonia.csv already exists, skipping.")
     
     print("Dataset download complete!")
 
