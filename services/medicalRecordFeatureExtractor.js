@@ -17,6 +17,7 @@ const DISEASE_FEATURE_MAPS = {
             'Pregnancies': 'Pregnancies',
             'Glucose': 'Glucose',
             'Blood Pressure': 'BloodPressure',
+            'Blood Pressure Systolic': 'BloodPressure', // Alias from lifestyle preset
             'Skin Thickness': 'SkinThickness',
             'Insulin': 'Insulin',
             'BMI': 'BMI',
@@ -53,6 +54,17 @@ const DISEASE_FEATURE_MAPS = {
             'Symmetry Mean': 'symmetry_mean',
             'Fractal Dimension Mean': 'fractal_dimension_mean'
         }
+    },
+    pneumonia: {
+        columns: ['FEV1', 'FVC', 'SpO2', 'respiratory_rate', 'temperature', 'age'],
+        metricMapping: {
+            'FEV1': 'FEV1',
+            'FVC': 'FVC',
+            'SpO2': 'SpO2',
+            'Respiratory Rate': 'respiratory_rate',
+            'Temperature': 'temperature',
+            'Age': 'age'
+        }
     }
 };
 
@@ -71,7 +83,8 @@ async function extractFeaturesForDisease(disease) {
     const diseaseToCategory = {
         'diabetes': 'diabetes',
         'cvd': 'cvd',
-        'cancer': 'cancer'
+        'cancer': 'cancer',
+        'pneumonia': 'pneumonia'
     };
     const category = diseaseToCategory[disease];
     if (!category) {
@@ -159,7 +172,7 @@ async function getFeatureQualityReport(disease) {
         return { totalRecords: 0, patientsContributing: 0, avgFeaturesPerRecord: 0, featureCompleteness: 0, supported: false };
     }
 
-    const diseaseToCategory = { 'diabetes': 'diabetes', 'cvd': 'cvd', 'cancer': 'cancer' };
+    const diseaseToCategory = { 'diabetes': 'diabetes', 'cvd': 'cvd', 'cancer': 'cancer', 'pneumonia': 'pneumonia' };
     const category = diseaseToCategory[disease];
     if (!category) {
         return { totalRecords: 0, patientsContributing: 0, avgFeaturesPerRecord: 0, featureCompleteness: 0, supported: false };
@@ -203,7 +216,7 @@ async function extractFeaturesForPatient(disease, hhNumber) {
         throw new Error(`No feature map defined for disease: ${disease}`);
     }
 
-    const diseaseToCategory = { 'diabetes': 'diabetes', 'cvd': 'cvd', 'cancer': 'cancer' };
+    const diseaseToCategory = { 'diabetes': 'diabetes', 'cvd': 'cvd', 'cancer': 'cancer', 'pneumonia': 'pneumonia' };
     const category = diseaseToCategory[disease];
 
     const result = await query(

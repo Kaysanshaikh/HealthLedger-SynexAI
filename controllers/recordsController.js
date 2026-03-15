@@ -518,12 +518,13 @@ exports.createDiagnosticReport = async (req, res) => {
     const recordId = `diagnostic-${patientHHNumber}-${Date.now()}`;
 
     // Map testType to disease category for ML relevancy
+    // IMPORTANT: These must match the keys in medicalRecordFeatureExtractor.js DISEASE_FEATURE_MAPS
     const testTypeToDiseaseCategory = {
       'metabolic': 'diabetes',
       'cardiovascular': 'cvd',
       'genomics': 'cancer',
-      'respiratory': 'respiratory',
-      'lifestyle': 'general',
+      'respiratory': 'pneumonia',
+      'lifestyle': 'diabetes',  // Lifestyle metrics (BMI, BP, Age) overlap with diabetes features
       'other': 'general'
     };
     const diseaseCategory = testTypeToDiseaseCategory[testType] || 'general';
