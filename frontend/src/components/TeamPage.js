@@ -8,7 +8,7 @@ const teamMembers = [
   {
     name: "Kaysan Shaikh",
     role: "Founder & Lead Architect",
-    contribution: "Kaysan is the visionary and sole developer behind HealthLedger SynexAI. He leads the end-to-end development of HealthLedger SynexAI, architecting the integration between blockchain security and the Federated Learning framework. He oversees the entire system lifecycle.",
+    contribution: "Kaysan is the visionary who leads the end-to-end development of HealthLedger SynexAI, architecting the integration between blockchain security and the FL framework. He oversees the entire system lifecycle.",
     linkedin: "https://www.linkedin.com/in/kaysanshaikh/",
   },
   {
