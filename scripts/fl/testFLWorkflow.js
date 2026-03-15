@@ -99,7 +99,8 @@ async function runFLWorkflowTest() {
             // Verify proof locally
             const isValid = await zkProofService.verifyProof(
                 proof.proofHash,
-                proof.publicInputs
+                proof.publicInputs,
+                proof.proof
             );
 
             if (!isValid) {

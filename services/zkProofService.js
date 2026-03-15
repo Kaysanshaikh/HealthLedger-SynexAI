@@ -2,6 +2,7 @@ const snarkjs = require("snarkjs");
 const fs = require("fs");
 const path = require("path");
 const { ethers } = require("ethers");
+const { buildPoseidon } = require("circomlibjs");
 
 /**
  * ZK Proof Service for Federated Learning
@@ -41,7 +42,7 @@ async function generateProof(modelWeights, trainingMetrics) {
             accuracy: Math.floor(trainingMetrics.accuracy * 10000),
             loss: Math.floor(trainingMetrics.loss * 1000000),
             samplesTrained: trainingMetrics.samplesTrained,
-            modelWeightsHash: hashModelWeights({ weights: weightSubset, salt })
+            modelWeightsHash: await hashModelWeights({ weights: weightSubset, salt })
         };
 
         // Generate real proof via snarkjs
@@ -242,14 +243,20 @@ function detectByzantineAttack(contribution, allContributions) {
 
 /**
  * Hash model weights for proof generation
- * @param {Object} modelWeights - Model weights
- * @returns {string} Hash of weights
+ * @param {Object} modelWeights - Model weights object containing weights array and salt
+ * @returns {Promise<string>} Hash of weights
  */
-function hashModelWeights(modelWeights) {
-    // In production, hash actual weight tensors
-    // For now, create deterministic hash from structure
-    const weightsString = JSON.stringify(modelWeights);
-    return ethers.id(weightsString);
+async function hashModelWeights(modelWeights) {
+    const poseidon = await buildPoseidon();
+    
+    // Prepare 11 inputs: 10 weights + 1 salt, exactly as in the circuit
+    const inputs = [...modelWeights.weights, modelWeights.salt];
+    
+    // Calculate Poseidon hash
+    const hash = poseidon(inputs);
+    
+    // Convert to field element string representation
+    return poseidon.F.toString(hash);
 }
 
 /**

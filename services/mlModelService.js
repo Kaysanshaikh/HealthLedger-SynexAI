@@ -217,6 +217,31 @@ async function trainLocalModel(disease, options = {}) {
     }
 }
 
+/**
+ * Train a model locally using simplified mock logic (for testing/prototyping)
+ * @param {string} disease - Disease type
+ * @param {Array} patientData - Training data
+ * @returns {Object} Trained model and metrics
+ */
+function trainLocalModelSimplified(disease, patientData) {
+    const samplesTrained = patientData ? patientData.length : 100;
+    const accuracy = 0.7 + Math.random() * 0.25;
+    const loss = 0.1 + Math.random() * 0.5;
+    
+    // Generate mock weights (10 weights)
+    const weights = {
+        output: Array(10).fill(0).map(() => Math.random())
+    };
+    
+    return {
+        modelWeights: weights,
+        accuracy,
+        loss,
+        samplesTrained
+    };
+}
+
+
 // ============================================
 // MODEL EVALUATION
 // ============================================
@@ -603,6 +628,7 @@ async function checkPythonBackend() {
 module.exports = {
     // Training
     trainLocalModel,
+    trainLocalModelSimplified,
     evaluateModel,
 
     // Aggregation
