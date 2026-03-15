@@ -805,11 +805,13 @@ exports.retrieveFile = async (req, res) => {
       return res.status(404).json({ error: "Record not found in database" });
     }
 
-    // Authorization check: User must be patient OR authorized doctor
+    // Authorization check: User must be patient OR authorized doctor OR creator
     const user = req.user; // Set by authMiddleware
     const isPatient = parseInt(user.hhNumber) === parseInt(record.patient_hh_number);
+    const isCreator = user.walletAddress && record.creator_wallet && 
+                      user.walletAddress.toLowerCase() === record.creator_wallet.toLowerCase();
 
-    let hasAccess = isPatient;
+    let hasAccess = isPatient || isCreator;
     if (!hasAccess && user.role === 'doctor') {
       const access = await query(
         `SELECT is_active FROM doctor_patient_access 
