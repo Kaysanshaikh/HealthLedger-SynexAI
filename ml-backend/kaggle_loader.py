@@ -87,7 +87,7 @@ def list_datasets(data_path="datasets/"):
                 'rows': len(df),
                 'columns': len(df.columns),
                 'column_names': df.columns.tolist(),
-                'size_kb': round(float(file_size), 1)
+                'size_kb': float(f"{file_size:.1f}")
             })
     
     return results
