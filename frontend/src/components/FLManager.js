@@ -159,12 +159,40 @@ const FLManager = () => {
             setLoading(true);
             const res = await client.post(`${API_URL}/models`, newModel);
             setShowCreateForm(false);
+            
+            const disease = newModel.disease;
+            const modelType = newModel.modelType;
+            
             setNewModel({ disease: 'diabetes', modelType: 'logistic_regression' });
             
             if (res.data.async) {
                 showNotification('success', '⏳ Processing', res.data.message || 'Transaction submitted to blockchain. It will appear shortly.');
-                // Auto-refresh after 8 seconds to try to catch the completion
-                setTimeout(() => fetchModels(), 8000);
+                
+                // Optimistic UI: Add a placeholder model
+                const tempModel = {
+                    model_id: `pending-${Date.now()}`,
+                    disease: disease,
+                    model_type: modelType,
+                    status: 'creating',
+                    accuracy: null,
+                    current_round: 0,
+                    isOptimistic: true
+                };
+                setModels(prev => [tempModel, ...prev]);
+
+                // Auto-refresh logic
+                const pollForModel = async (retryCount = 0) => {
+                    if (retryCount > 10) return; // Stop after 10 retries (~2 mins total)
+                    await new Promise(resolve => setTimeout(resolve, 5000 + (retryCount * 2000)));
+                    await fetchModels();
+                    
+                    setModels(currentModels => {
+                        const exists = currentModels.some(m => !m.isOptimistic && m.disease.toLowerCase() === disease.toLowerCase() && m.model_type.toLowerCase() === modelType.toLowerCase());
+                        if (!exists) pollForModel(retryCount + 1);
+                        return currentModels;
+                    });
+                };
+                pollForModel();
             } else {
                 await fetchModels();
                 showNotification('success', '✅ Success!', 'Model created successfully.');
@@ -222,23 +250,26 @@ const FLManager = () => {
     const handleDeleteModel = async (modelId) => {
         if (!window.confirm("Are you sure you want to delete this model? This will remove it from the research network.")) return;
 
+        const originalModels = [...models];
+        
         try {
-            setLoading(true);
+            // Remove immediately from UI
+            setModels(prev => prev.filter(m => m.model_id !== modelId));
+            
             const res = await client.delete(`${API_URL}/models/${modelId}`);
             
             if (res.data.async) {
                 showNotification('success', '⏳ Processing', res.data.message || "Model deletion processing.");
-                // Auto-refresh after 5 seconds
-                setTimeout(() => fetchModels(), 5000);
+                // Sync after a while to make sure everything is consistent
+                setTimeout(() => fetchModels(), 10000);
             } else {
                 showNotification('success', '✅ Success!', "Model deleted successfully.");
-                await fetchModels();
             }
         } catch (err) {
             console.error('Failed to delete model:', err);
             showNotification('error', '❌ Deletion Failed', parseBlockchainError(err));
-        } finally {
-            setLoading(false);
+            // Rollback on failure
+            setModels(originalModels);
         }
     };
 
@@ -394,6 +425,7 @@ const FLManager = () => {
                                 <option value="diabetes">Diabetes</option>
                                 <option value="cvd">Cardiovascular</option>
                                 <option value="cancer">Cancer</option>
+                                <option value="pneumonia">Pneumonia</option>
                             </select>
                             <select
                                 className="p-2 border rounded-md bg-background"
@@ -402,6 +434,8 @@ const FLManager = () => {
                             >
                                 <option value="logistic_regression">Logistic Regression</option>
                                 <option value="neural_network">Neural Network</option>
+                                <option value="random_forest">Random Forest</option>
+                                <option value="cnn">CNN</option>
                             </select>
                             <Button type="submit" disabled={loading}>
                                 {loading ? 'Creating...' : 'Create'}
@@ -421,8 +455,11 @@ const FLManager = () => {
                             <CardHeader className="pb-2">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="capitalize text-lg group-hover:text-primary transition-colors flex items-center gap-2">
-                                        <Activity className={`h-4 w-4 ${activeRound ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                                        <Activity className={`h-4 w-4 ${activeRound ? 'text-primary animate-pulse' : (model.isOptimistic ? 'text-amber-500 animate-spin' : 'text-muted-foreground')}`} />
                                         {model.disease}
+                                        {model.isOptimistic && (
+                                            <span className="text-[10px] font-bold text-amber-500 animate-pulse">Syncing...</span>
+                                        )}
                                     </CardTitle>
                                     <div className="flex items-center gap-2">
                                         <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded ${activeRound
@@ -506,6 +543,14 @@ const FLManager = () => {
                                     </Button>
                                 )}
                             </div>
+                            {model.isOptimistic && (
+                                <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] flex items-center justify-center rounded-xl z-10 pointer-events-none">
+                                    <div className="bg-background/90 border border-amber-500/30 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2">
+                                        <RefreshCw className="h-3 w-3 text-amber-500 animate-spin" />
+                                        <span className="text-[10px] font-bold text-amber-500">Syncing Node...</span>
+                                    </div>
+                                </div>
+                            )}
                         </Card>
                     );
                 })}

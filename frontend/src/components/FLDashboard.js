@@ -160,10 +160,52 @@ function FLDashboard() {
         e.preventDefault();
         try {
             setLoading(true);
-            await client.post(`${API_URL}/models`, newModel);
+            const res = await client.post(`${API_URL}/models`, newModel);
             setShowCreateForm(false);
+            
+            const disease = newModel.disease;
+            const modelType = newModel.modelType;
+            
             setNewModel({ disease: 'diabetes', modelType: 'logistic_regression' });
-            await fetchModels();
+
+            if (res.data.async) {
+                showNotification('success', '⏳ Processing', res.data.message || 'Model creation submitted. It will appear in the list once confirmed on the blockchain.');
+                
+                // Optimistic UI: Add a placeholder model with a "creating" status
+                const tempModel = {
+                    model_id: `pending-${Date.now()}`,
+                    disease: disease,
+                    model_type: modelType,
+                    status: 'creating',
+                    accuracy: null,
+                    current_round: 0,
+                    isOptimistic: true
+                };
+                setModels(prev => [tempModel, ...prev]);
+
+                // Auto-refresh logic: Poll or wait for the model to appear
+                const pollForModel = async (retryCount = 0) => {
+                    if (retryCount > 10) return; // Stop after 10 retries (~2 mins total)
+                    
+                    await new Promise(resolve => setTimeout(resolve, 5000 + (retryCount * 2000)));
+                    await fetchModels();
+                    
+                    // Check if the model is now in the real list
+                    setModels(currentModels => {
+                        const exists = currentModels.some(m => !m.isOptimistic && m.disease.toLowerCase() === disease.toLowerCase() && m.model_type.toLowerCase() === modelType.toLowerCase());
+                        if (exists) {
+                            return currentModels;
+                        } else {
+                            pollForModel(retryCount + 1);
+                            return currentModels;
+                        }
+                    });
+                };
+                pollForModel();
+            } else {
+                await fetchModels();
+                showNotification('success', '✅ Success!', 'Model created successfully.');
+            }
         } catch (err) {
             console.error('Failed to create model:', err);
             showNotification('error', '❌ Model creation failed', parseBlockchainError(err));
@@ -217,16 +259,28 @@ function FLDashboard() {
     const handleDeleteModel = async (modelId) => {
         if (!window.confirm("Are you sure you want to delete this model? This will remove it from the research network.")) return;
 
+        // Optimistic UI: remember old models in case of failure
+        const originalModels = [...models];
+        
         try {
-            setLoading(true);
-            await client.delete(`${API_URL}/models/${modelId}`);
-            showNotification('success', '✅ Success!', "Model deleted successfully.");
-            await fetchModels();
+            // Remove immediately from UI
+            setModels(prev => prev.filter(m => m.model_id !== modelId));
+            
+            const res = await client.delete(`${API_URL}/models/${modelId}`);
+            
+            if (res.data.async) {
+                showNotification('success', '⏳ Deletion Started', res.data.message || "Model deletion processing in the background.");
+                // Since we've already removed it from UI, we don't necessarily need to refresh immediately
+                // but we should sync after a while to make sure everything is consistent
+                setTimeout(() => fetchModels(), 10000);
+            } else {
+                showNotification('success', '✅ Success!', "Model deleted successfully.");
+            }
         } catch (err) {
             console.error('Failed to delete model:', err);
             showNotification('error', '❌ Deletion Failed', parseBlockchainError(err));
-        } finally {
-            setLoading(false);
+            // Rollback on failure
+            setModels(originalModels);
         }
     };
 
@@ -437,8 +491,11 @@ function FLDashboard() {
                                         <CardHeader className="pb-4">
                                             <div className="flex items-center justify-between">
                                                 <CardTitle className="capitalize text-xl flex items-center gap-2">
-                                                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                                                    <div className={`h-2 w-2 rounded-full ${model.isOptimistic ? 'bg-amber-500 animate-ping' : 'bg-green-500 animate-pulse'}`} />
                                                     {model.disease}
+                                                    {model.isOptimistic && (
+                                                        <span className="text-[10px] font-bold text-amber-500 animate-pulse ml-2">Syncing...</span>
+                                                    )}
                                                 </CardTitle>
                                                 <div className="flex items-center gap-2">
                                                     <span className="px-2 py-1 text-[10px] font-bold uppercase rounded-md bg-primary/10 text-primary border border-primary/20">
@@ -534,6 +591,14 @@ function FLDashboard() {
                                                 </>
                                             )}
                                         </CardContent>
+                                        {model.isOptimistic && (
+                                            <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px] flex items-center justify-center rounded-xl z-20 pointer-events-none">
+                                                <div className="bg-background/90 border border-amber-500/50 px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                                                    <RefreshCw className="h-4 w-4 text-amber-500 animate-spin" />
+                                                    <span className="text-xs font-bold text-amber-500">Syncing with Network...</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </Card>
                                 ))}
                         </div>
