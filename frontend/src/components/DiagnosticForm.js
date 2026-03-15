@@ -7,7 +7,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { FileText, AlertTriangle, CheckCircle, ArrowLeft, Upload, File, X, Plus, Trash2, Activity } from 'lucide-react';
+import { FileText, AlertTriangle, CheckCircle, ArrowLeft, Upload, File, X, Plus, Trash2, Activity, Info } from 'lucide-react';
 import client from "../api/client";
 
 // Disease-specific metric presets for structured health data entry
