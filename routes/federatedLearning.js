@@ -256,7 +256,8 @@ router.post("/rounds/train", async (req, res) => {
         mlModelService.trainLocalModel(disease, {
             dataSource: source,
             sampleCount: limit,
-            modelId
+            modelId,
+            hhNumber: req.body.hhNumber || null
         }).catch(err => {
             console.error(`❌ Background training failed for ${modelId}:`, err);
         });
@@ -354,6 +355,25 @@ router.get("/training/status/:modelId", async (req, res) => {
         res.json({ success: true, ...status });
     } catch (error) {
         console.error("Training status error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Check patient trainability for a disease
+router.get("/trainability-check/:disease", async (req, res) => {
+    try {
+        const { disease } = req.params;
+        const hhNumber = req.query.hhNumber;
+
+        if (!hhNumber) {
+            return res.status(400).json({ error: "HH Number required for check" });
+        }
+
+        const report = await featureExtractor.checkPatientTrainability(disease, hhNumber);
+        res.json({ success: true, ...report });
+
+    } catch (error) {
+        console.error("Trainability check error:", error);
         res.status(500).json({ error: error.message });
     }
 });

@@ -340,3 +340,35 @@ exports.registerDiagnostic = async (req, res) => {
     });
   }
 };
+
+exports.suggestHHNumber = async (req, res) => {
+  try {
+    let hhNumber;
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!isUnique && attempts < maxAttempts) {
+      // Generate random 6-digit number between 100000 and 999999
+      hhNumber = Math.floor(100000 + Math.random() * 900000);
+      
+      const existing = await db.getUserByHHNumber(hhNumber);
+      if (!existing) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+
+    if (!isUnique) {
+      return res.status(500).json({ error: "Failed to generate a unique HH number. Please try again." });
+    }
+
+    res.json({
+      success: true,
+      hhNumber: hhNumber.toString()
+    });
+  } catch (error) {
+    console.error("❌ HH Suggestion error:", error);
+    res.status(500).json({ error: "Failed to suggest HH number" });
+  }
+};

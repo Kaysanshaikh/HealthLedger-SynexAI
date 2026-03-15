@@ -160,6 +160,17 @@ const DoctorRegistry = () => {
     }
   };
 
+  const handleSuggestHH = async () => {
+    try {
+      const response = await client.get("/register/suggest-hh");
+      if (response.data.success) {
+        setFormData(prev => ({ ...prev, hhNumber: response.data.hhNumber }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch HH suggestion:", err);
+    }
+  };
+
   useEffect(() => {
     console.log("DoctorRegistry mounted");
   }, []);
@@ -201,7 +212,25 @@ const DoctorRegistry = () => {
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="hhNumber">HH Number (6-digit) *</Label>
-                <Input id="hhNumber" name="hhNumber" type="text" placeholder="123456" required onChange={handleChange} pattern="[0-9]{6}" maxLength="6" minLength="6" title="Please enter exactly 6 digits" />
+                <div className="flex space-x-2">
+                  <Input 
+                    id="hhNumber" 
+                    name="hhNumber" 
+                    type="text" 
+                    placeholder="123456" 
+                    required 
+                    value={formData.hhNumber}
+                    onChange={handleChange} 
+                    pattern="[0-9]{6}" 
+                    maxLength="6" 
+                    minLength="6" 
+                    title="Please enter exactly 6 digits" 
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" onClick={handleSuggestHH}>
+                    Suggest
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Phone Number *</Label>

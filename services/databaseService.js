@@ -442,7 +442,7 @@ class DatabaseService {
               pp.full_name as patient_name
        FROM record_index ri
        LEFT JOIN patient_profiles pp ON ri.patient_hh_number = pp.hh_number
-       WHERE ri.creator_wallet = LOWER($1)
+       WHERE LOWER(ri.creator_wallet) = LOWER($1)
          AND (
            ri.metadata->>'diagnosticHHNumber' = $2::text 
            OR ri.record_type = 'diagnostic-report'

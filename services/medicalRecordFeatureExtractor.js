@@ -193,6 +193,8 @@ async function getFeatureQualityReport(disease) {
 
 module.exports = {
     extractFeaturesForDisease,
+    extractFeaturesForPatient,
+    checkPatientTrainability,
     getFeatureQualityReport,
     DISEASE_FEATURE_MAPS
 };

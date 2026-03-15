@@ -51,6 +51,7 @@ async function trainLocalModel(disease, options = {}) {
         sampleCount = null,
         modelId = null,
         globalModel = null,
+        hhNumber = null,
         config = {}
     } = options;
 
@@ -71,7 +72,10 @@ async function trainLocalModel(disease, options = {}) {
         let customData = null;
         if (dataSource === 'medical_records' || dataSource === 'combined') {
             try {
-                const extracted = await featureExtractor.extractFeaturesForDisease(disease);
+                const extracted = hhNumber 
+                    ? await featureExtractor.extractFeaturesForPatient(disease, hhNumber)
+                    : await featureExtractor.extractFeaturesForDisease(disease);
+                
                 if (extracted.features.length > 0) {
                     customData = {
                         features: extracted.features,

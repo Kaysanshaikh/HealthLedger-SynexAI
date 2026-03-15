@@ -3,20 +3,23 @@ import client from '../api/client';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { X, Database, FileText, RefreshCw, Activity, CheckCircle, AlertCircle, Zap } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = '/fl';
 
 const DATA_SOURCE_OPTIONS = [
     { id: 'kaggle', label: 'Kaggle Datasets', icon: Database, description: 'Pre-curated research datasets' },
-    { id: 'medical_records', label: 'Medical Records', icon: FileText, description: 'Anonymized patient data' },
+    { id: 'medical_records', label: 'Medical Records', icon: FileText, description: 'My medical record history' },
     { id: 'combined', label: 'Combined', icon: Zap, description: 'Merge both sources' },
 ];
 
 const TRAINING_STEPS = ['Checking data', 'Loading libraries', 'Loading dataset', 'Training', 'Complete'];
 
 function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }) {
+    const { user } = useAuth();
     const [dataSource, setDataSource] = useState('kaggle');
     const [sampleCount, setSampleCount] = useState(null);
+    const [trainability, setTrainability] = useState({ isTrainable: true, loading: false });
     const [datasetInfo, setDatasetInfo] = useState(null);
     const [loadingInfo, setLoadingInfo] = useState(true);
     const [training, setTraining] = useState(false);
@@ -36,6 +39,17 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                 if (res.data.kaggleDatasets?.[0]?.rows) {
                     setSampleCount(res.data.kaggleDatasets[0].rows);
                 }
+
+                // Check trainability if patient
+                if (user?.role === 'patient') {
+                    setTrainability(prev => ({ ...prev, loading: true }));
+                    const trainRes = await client.get(`${API_URL}/trainability-check/${disease}?hhNumber=${user.hh_number}`);
+                    setTrainability({
+                        isTrainable: trainRes.data.isTrainable,
+                        reason: trainRes.data.reason,
+                        loading: false
+                    });
+                }
             } catch (err) {
                 console.error('Failed to fetch dataset info:', err);
             } finally {
@@ -43,7 +57,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             }
         };
         fetchDatasetInfo();
-    }, [disease]);
+    }, [disease, user]);
 
     // Poll training status
     useEffect(() => {
@@ -90,7 +104,8 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             const trainRes = await client.post(`${API_URL}/rounds/train`, {
                 modelId,
                 dataSource,
-                sampleCount: sampleCount || undefined
+                sampleCount: sampleCount || undefined,
+                hhNumber: user?.hh_number // Send patient context if available
             });
 
             if (!trainRes.data.success) {
@@ -270,16 +285,23 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                         <div className="grid grid-cols-3 gap-3">
                                             {DATA_SOURCE_OPTIONS.map(opt => {
                                                 const Icon = opt.icon;
-                                                const isDisabled = opt.id === 'medical_records' && (!medical?.totalRecords || medical.totalRecords === 0);
-                                                const isCombinedDisabled = opt.id === 'combined' && (!medical?.totalRecords || medical.totalRecords === 0);
+                                                const isPatientSource = opt.id === 'medical_records' || opt.id === 'combined';
+                                                
+                                                // Disable if no data exists globally for institutions, 
+                                                // or if this specific patient is not trainable
+                                                const noGlobalData = opt.id === 'medical_records' && (!medical?.totalRecords || medical.totalRecords === 0);
+                                                const isPatientIneligible = user?.role === 'patient' && isPatientSource && !trainability.isTrainable;
+                                                
+                                                const isDisabled = noGlobalData || isPatientIneligible;
+                                                
                                                 return (
                                                     <button
                                                         key={opt.id}
-                                                        onClick={() => !isDisabled && !isCombinedDisabled && setDataSource(opt.id)}
-                                                        disabled={isDisabled || isCombinedDisabled}
-                                                        className={`p-4 rounded-xl border-2 text-left transition-all ${dataSource === opt.id
+                                                        onClick={() => !isDisabled && setDataSource(opt.id)}
+                                                        disabled={isDisabled}
+                                                        className={`p-4 rounded-xl border-2 text-left transition-all relative ${dataSource === opt.id
                                                             ? 'border-primary bg-primary/5 shadow-md'
-                                                            : isDisabled || isCombinedDisabled
+                                                            : isDisabled
                                                                 ? 'border-muted bg-muted/20 opacity-50 cursor-not-allowed'
                                                                 : 'border-border hover:border-primary/40 cursor-pointer'
                                                             }`}
@@ -287,11 +309,37 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                                         <Icon className={`h-5 w-5 mb-2 ${dataSource === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
                                                         <p className="text-sm font-semibold">{opt.label}</p>
                                                         <p className="text-[10px] text-muted-foreground">{opt.description}</p>
+                                                        {user?.role === 'patient' && isPatientSource && !trainability.loading && !trainability.isTrainable && (
+                                                            <div className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1" title={trainability.reason}>
+                                                                <AlertCircle className="h-3 w-3 text-white" />
+                                                            </div>
+                                                        )}
                                                     </button>
                                                 );
                                             })}
                                         </div>
                                     </div>
+
+                                    {/* Trainability Feedback for Patients */}
+                                    {user?.role === 'patient' && (dataSource === 'medical_records' || dataSource === 'combined') && (
+                                        <div className={`p-4 rounded-xl border text-sm flex gap-3 ${trainability.isTrainable ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                                            {trainability.loading ? (
+                                                <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+                                            ) : trainability.isTrainable ? (
+                                                <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                                            ) : (
+                                                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                                            )}
+                                            <div>
+                                                <p className={`font-semibold ${trainability.isTrainable ? 'text-green-700' : 'text-red-700'}`}>
+                                                    {trainability.loading ? 'Checking records...' : trainability.isTrainable ? 'Eligible for Training' : 'Not Eligible'}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    {trainability.loading ? 'Analyzing your health metrics...' : trainability.reason}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Dataset Details */}
                                     <div className="grid grid-cols-2 gap-4">
