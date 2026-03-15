@@ -30,22 +30,35 @@ router.post("/models", async (req, res) => {
             });
         }
 
-        // Create model on blockchain
-        const modelId = await flService.createFLModel(disease, modelType);
+        const creatorWallet = req.user?.walletAddress || "admin";
 
-        // Store in database
-        await db.query(
-            `INSERT INTO fl_models (model_id, disease, model_type, created_by) 
-       VALUES ($1, $2, $3, $4)`,
-            [modelId, disease, modelType, req.user?.walletAddress || "admin"]
-        );
-
+        // Respond immediately to prevent Render timeout
         res.json({
             success: true,
-            modelId,
+            async: true,
             disease,
-            modelType
+            modelType,
+            message: "Model creation submitted to the blockchain. It will appear in your models list shortly."
         });
+
+        // Run blockchain transaction in background
+        (async () => {
+            try {
+                console.log(`[ASYNC] Creating FL model for ${disease} (${modelType}) on blockchain...`);
+                // Create model on blockchain
+                const modelId = await flService.createFLModel(disease, modelType);
+
+                // Store in database
+                await db.query(
+                    `INSERT INTO fl_models (model_id, disease, model_type, created_by) 
+               VALUES ($1, $2, $3, $4)`,
+                    [modelId, disease, modelType, creatorWallet]
+                );
+                console.log(`[ASYNC] Successfully created FL model ${modelId}.`);
+            } catch (err) {
+                console.error(`[ASYNC ERROR] Model creation failed for ${disease}:`, err);
+            }
+        })();
 
     } catch (error) {
         console.error("Create model error:", error);
@@ -76,23 +89,32 @@ router.delete("/models/:modelId", async (req, res) => {
     try {
         const { modelId } = req.params;
 
-        // 1. Deactivate on blockchain
-        try {
-            await flService.pauseModel(modelId);
-        } catch (bcError) {
-            console.warn("Blockchain pause failed (might already be paused or not exist):", bcError.message);
-            // We continue to update the database even if blockchain fails
-            // to ensure the UI stays in sync with the user's intent
-        }
-
-        // 2. Update database status
-        await db.deleteFLModel(modelId);
-
+        // Respond immediately to prevent Render timeout
         res.json({
             success: true,
-            message: "Model deleted successfully",
+            async: true,
+            message: "Model deletion submitted to the blockchain. It will be removed from your models list shortly.",
             modelId
         });
+
+        // Run blockchain transaction in background
+        (async () => {
+            try {
+                console.log(`[ASYNC] Deleting FL model ${modelId}...`);
+                // 1. Deactivate on blockchain
+                try {
+                    await flService.pauseModel(modelId);
+                } catch (bcError) {
+                    console.warn(`[ASYNC WARN] Blockchain pause failed for ${modelId}:`, bcError.message);
+                }
+
+                // 2. Update database status
+                await db.deleteFLModel(modelId);
+                console.log(`[ASYNC] Successfully deleted FL model ${modelId}.`);
+            } catch (err) {
+                console.error(`[ASYNC ERROR] Model deletion failed for ${modelId}:`, err);
+            }
+        })();
 
     } catch (error) {
         console.error("Delete model error:", error);
@@ -300,7 +322,8 @@ router.get("/datasets/:disease", async (req, res) => {
         const datasetFiles = {
             diabetes: 'diabetes.csv',
             cvd: 'heart_disease_data.csv',
-            cancer: 'breast_cancer.csv'
+            cancer: 'breast_cancer.csv',
+            pneumonia: 'pneumonia.csv'
         };
 
         const targetFile = datasetFiles[disease];

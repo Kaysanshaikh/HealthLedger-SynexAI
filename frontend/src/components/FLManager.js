@@ -157,10 +157,18 @@ const FLManager = () => {
         e.preventDefault();
         try {
             setLoading(true);
-            await client.post(`${API_URL}/models`, newModel);
+            const res = await client.post(`${API_URL}/models`, newModel);
             setShowCreateForm(false);
             setNewModel({ disease: 'diabetes', modelType: 'logistic_regression' });
-            await fetchModels();
+            
+            if (res.data.async) {
+                showNotification('success', '⏳ Processing', res.data.message || 'Transaction submitted to blockchain. It will appear shortly.');
+                // Auto-refresh after 8 seconds to try to catch the completion
+                setTimeout(() => fetchModels(), 8000);
+            } else {
+                await fetchModels();
+                showNotification('success', '✅ Success!', 'Model created successfully.');
+            }
         } catch (err) {
             console.error('Failed to create model:', err);
             showNotification('error', '❌ Loading Failed', parseBlockchainError(err));
@@ -216,9 +224,16 @@ const FLManager = () => {
 
         try {
             setLoading(true);
-            await client.delete(`${API_URL}/models/${modelId}`);
-            showNotification('success', '✅ Success!', "Model deleted successfully.");
-            await fetchModels();
+            const res = await client.delete(`${API_URL}/models/${modelId}`);
+            
+            if (res.data.async) {
+                showNotification('success', '⏳ Processing', res.data.message || "Model deletion processing.");
+                // Auto-refresh after 5 seconds
+                setTimeout(() => fetchModels(), 5000);
+            } else {
+                showNotification('success', '✅ Success!', "Model deleted successfully.");
+                await fetchModels();
+            }
         } catch (err) {
             console.error('Failed to delete model:', err);
             showNotification('error', '❌ Deletion Failed', parseBlockchainError(err));
