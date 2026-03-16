@@ -137,8 +137,7 @@ async function viewData() {
         (SELECT COUNT(*) FROM diagnostic_profiles) as total_diagnostics,
         (SELECT COUNT(*) FROM record_index) as total_records,
         (SELECT COUNT(*) FROM access_logs) as total_logs,
-        (SELECT COUNT(*) FROM notifications) as total_notifications,
-        (SELECT COUNT(*) FROM sessions) as active_sessions
+        (SELECT COUNT(*) FROM notifications) as total_notifications
     `);
     
     const s = stats.rows[0];
@@ -149,7 +148,6 @@ async function viewData() {
     console.log(`   📄 Total Records: ${s.total_records}`);
     console.log(`   🔐 Total Access Logs: ${s.total_logs}`);
     console.log(`   🔔 Total Notifications: ${s.total_notifications}`);
-    console.log(`   🔑 Active Sessions: ${s.active_sessions}`);
     console.log('');
     
   } catch (error) {

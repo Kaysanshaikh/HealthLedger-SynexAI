@@ -90,15 +90,6 @@ CREATE TABLE IF NOT EXISTS access_logs (
   accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Sessions: JWT session management
-CREATE TABLE IF NOT EXISTS sessions (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  token_hash VARCHAR(255) UNIQUE NOT NULL,
-  expires_at TIMESTAMP NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Doctor-Patient relationships: Track access grants
 CREATE TABLE IF NOT EXISTS doctor_patient_access (
   id SERIAL PRIMARY KEY,
