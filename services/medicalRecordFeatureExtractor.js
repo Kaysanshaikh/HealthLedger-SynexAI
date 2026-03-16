@@ -113,12 +113,25 @@ async function extractFeaturesForDisease(disease) {
         recordMetrics[row.record_id][row.metric_name] = parseFloat(row.metric_value);
     }
 
-    // Convert to feature vectors (only include records with sufficient features)
+    // Convert to feature vectors (only include records with sufficient features AND a diagnosis)
     const features = [];
+    const labels = [];
     const minFeatureRatio = 0.5; // Need at least 50% of features filled
     const requiredFeatures = Math.ceil(featureMap.columns.length * minFeatureRatio);
 
     for (const [recordId, metrics] of Object.entries(recordMetrics)) {
+        // Find Diagnosis first (must have it to be valid for training)
+        let diagnosis = null;
+        for (const [metricName, val] of Object.entries(metrics)) {
+            if (metricName.toLowerCase().includes('diagnosis') || metricName.toLowerCase() === 'target') {
+                diagnosis = val > 0 ? 1 : 0;
+                break;
+            }
+        }
+        
+        // If no diagnosis is found, we cannot use this record for supervised training
+        if (diagnosis === null) continue;
+
         const featureVector = [];
         let filledCount = 0;
 
@@ -142,6 +155,7 @@ async function extractFeaturesForDisease(disease) {
 
         if (filledCount >= requiredFeatures) {
             features.push(featureVector);
+            labels.push(diagnosis);
         }
     }
 
@@ -155,6 +169,7 @@ async function extractFeaturesForDisease(disease) {
 
     return {
         features,
+        labels,
         featureNames: featureMap.columns,
         recordCount: features.length,
         patientCount: parseInt(patientResult.rows[0]?.count || 0)
@@ -240,10 +255,23 @@ async function extractFeaturesForPatient(disease, hhNumber) {
     }
 
     const features = [];
+    const labels = [];
     const minFeatureRatio = 0.5;
     const requiredFeatures = Math.ceil(featureMap.columns.length * minFeatureRatio);
 
     for (const [recordId, metrics] of Object.entries(recordMetrics)) {
+        // Find Diagnosis first
+        let diagnosis = null;
+        for (const [metricName, val] of Object.entries(metrics)) {
+            if (metricName.toLowerCase().includes('diagnosis') || metricName.toLowerCase() === 'target') {
+                diagnosis = val > 0 ? 1 : 0;
+                break;
+            }
+        }
+        
+        // Skip if no diagnosis
+        if (diagnosis === null) continue;
+
         const featureVector = [];
         let filledCount = 0;
 
@@ -260,17 +288,19 @@ async function extractFeaturesForPatient(disease, hhNumber) {
                 featureVector.push(value);
                 filledCount++;
             } else {
-                featureVector.push(0);
+                featureVector.push(0); 
             }
         }
 
         if (filledCount >= requiredFeatures) {
             features.push(featureVector);
+            labels.push(diagnosis);
         }
     }
 
     return {
         features,
+        labels,
         featureNames: featureMap.columns,
         recordCount: features.length
     };

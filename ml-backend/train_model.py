@@ -111,16 +111,13 @@ def train(input_data):
         
         if data_source in ("medical_records", "combined") and custom_data:
             features = custom_data.get("features", [])
+            labels = custom_data.get("labels", [])
             if len(features) > 0:
+                if not labels or len(labels) != len(features):
+                    return {"error": f"CRITICAL: Medical records lack corresponding diagnosis labels. Cannot train supervised ML model."}
+                
                 X_custom = np.array(features)
-                # For medical records, we don't have labels — generate synthetic labels
-                # based on feature patterns (this is a simplification for the prototype)
-                # In production, labels would come from confirmed diagnoses
-                y_custom = np.zeros(len(X_custom))
-                for i, row in enumerate(X_custom):
-                    # Simple heuristic: if most values are above mean, label as positive
-                    if np.mean(row) > np.median(row):
-                        y_custom[i] = 1
+                y_custom = np.array(labels)
                 
                 if X_all is not None and y_all is not None:
                     # Combined mode: merge kaggle + medical records
