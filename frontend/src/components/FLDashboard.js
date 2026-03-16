@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import client from '../api/client';
 import NavBarLogout from './NavBarLogout';
