@@ -1,0 +1,46 @@
+{
+  "modelWeights": {
+    "coef": [
+      [
+        0.3791049758583616,
+        1.1583848884760506,
+        -0.20753242405729397,
+        0.06668855337443906,
+        -0.13568851364728607,
+        0.7158631617107327,
+        0.2563208914261643,
+        0.1832659679516406
+      ]
+    ],
+    "intercept": [
+      -0.8758136716334642
+    ],
+    "feature_names": []
+  },
+  "accuracy": 0.7142857142857143,
+  "loss": 0.4944680428597506,
+  "samplesTrained": 614,
+  "trainingTime": 0.003856182098388672,
+  "metrics": {
+    "samples": 614,
+    "test_samples": 154,
+    "precision": 0.6086956521739131,
+    "recall": 0.5185185185185185,
+    "f1": 0.56,
+    "confusion_matrix": [
+      [
+        82,
+        18
+      ],
+      [
+        26,
+        28
+      ]
+    ],
+    "iterations": 9,
+    "modelType": "logistic_regression",
+    "dataSource": "kaggle",
+    "totalAvailable": 768
+  },
+  "dataSource": "kaggle"
+}

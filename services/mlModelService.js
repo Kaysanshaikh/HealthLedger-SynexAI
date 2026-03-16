@@ -183,6 +183,10 @@ async function trainLocalModel(disease, options = {}) {
                     metrics: {
                         accuracy: result.accuracy,
                         loss: result.loss,
+                        precision: result.metrics?.precision || 0,
+                        recall: result.metrics?.recall || 0,
+                        f1: result.metrics?.f1 || 0,
+                        confusionMatrix: result.metrics?.confusion_matrix || [],
                         samplesTrained: result.metrics?.samples || 0,
                         dataSource
                     }

@@ -7,7 +7,7 @@ import logging
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score, log_loss
+from sklearn.metrics import accuracy_score, log_loss, precision_score, recall_score, f1_score, confusion_matrix
 from kaggle_loader import load_dataset, get_train_test_split
 
 # Configure logging
@@ -205,7 +205,13 @@ def train(input_data):
         elif hasattr(model, 'n_estimators'):
             iterations = model.n_estimators
         
-        logger.info(f"✨ Training complete. Accuracy: {accuracy:.4f}, Loss: {loss:.4f}")
+        # Additional detailed metrics
+        precision = precision_score(y_test, y_pred, average='binary')
+        recall = recall_score(y_test, y_pred, average='binary')
+        f1 = f1_score(y_test, y_pred, average='binary')
+        cm = confusion_matrix(y_test, y_pred).tolist()
+        
+        logger.info(f"✨ Training complete. Acc: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
         
         return {
             "weights": weights,
@@ -215,6 +221,10 @@ def train(input_data):
             "metrics": {
                 "samples": len(X_train),
                 "test_samples": len(X_test),
+                "precision": float(precision),
+                "recall": float(recall),
+                "f1": float(f1),
+                "confusion_matrix": cm,
                 "iterations": iterations,
                 "modelType": model_type,
                 "dataSource": data_source,
