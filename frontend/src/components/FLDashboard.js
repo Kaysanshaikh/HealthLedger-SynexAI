@@ -85,12 +85,36 @@ function FLDashboard() {
             const res = await client.get(`${API_URL}/metrics/${modelId}`);
             if (res.data.success) {
                 // Formatting data for Recharts
-                const formatted = res.data.metrics.map(m => ({
-                    round: `R${m.round_number}`,
-                    accuracy: parseFloat(m.avg_accuracy) * 100,
-                    loss: parseFloat(m.avg_loss),
-                    participants: parseInt(m.contributions)
-                }));
+                const formatted = res.data.metrics.map(m => {
+                    // Handle confusion matrix if available
+                    let cm = null;
+                    if (m.confusion_matrix) {
+                        try {
+                            const rawCm = typeof m.confusion_matrix === 'string' ? JSON.parse(m.confusion_matrix) : m.confusion_matrix;
+                            // Map from [[TP, FN], [FP, TN]] to {tp, fn, fp, tn}
+                            cm = {
+                                tp: rawCm[0][0],
+                                fn: rawCm[0][1],
+                                fp: rawCm[1][0],
+                                tn: rawCm[1][1]
+                            };
+                        } catch (e) {
+                            console.warn("Failed to parse confusion matrix for round", m.round_number);
+                        }
+                    }
+
+                    return {
+                        round: `R${m.round_number}`,
+                        accuracy: parseFloat(m.avg_accuracy),
+                        loss: parseFloat(m.avg_loss),
+                        precision: parseFloat(m.avg_precision),
+                        recall: parseFloat(m.avg_recall),
+                        f1: parseFloat(m.avg_f1),
+                        auc: parseFloat(m.avg_auc),
+                        confusionMatrix: cm,
+                        participants: parseInt(m.contributions)
+                    };
+                });
                 setModelMetrics(formatted);
             }
         } catch (err) {
@@ -828,24 +852,17 @@ function FLDashboard() {
                                                 {/* Evaluation Controls */}
                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                     <div>
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            {['diabetes', 'cvd', 'cancer'].map((d) => (
-                                                                <button
-                                                                    key={d}
-                                                                    onClick={() => setSelectedEvaluationDisease(d)}
-                                                                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
-                                                                        selectedEvaluationDisease === d
-                                                                            ? 'bg-primary border-primary text-primary-foreground shadow-md'
-                                                                            : 'bg-muted/10 border-border hover:border-primary/50 text-muted-foreground'
-                                                                    }`}
-                                                                >
-                                                                    {d}
-                                                                </button>
-                                                            ))}
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className="px-2.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/30">
+                                                                {selectedEvaluationDisease}
+                                                            </div>
+                                                            <div className="px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-wider border border-border/50">
+                                                                {flModels.find(m => m.model_id === selectedModelForMetrics)?.modelType || 'Generic'}
+                                                            </div>
                                                         </div>
                                                         <p className="text-[10px] text-muted-foreground font-mono">
                                                             {modelMetrics.length > 0 ? (
-                                                                <>Metrics from round {modelMetrics[modelMetrics.length - 1].round} · {modelMetrics[modelMetrics.length - 1].participants} hospitals</>
+                                                                <>Round {modelMetrics[modelMetrics.length - 1].round} Performance · {modelMetrics[modelMetrics.length - 1].participants} Institutions Verified</>
                                                             ) : (
                                                                 <>Round data syncing...</>
                                                             )}
@@ -908,10 +925,10 @@ function FLDashboard() {
                                                                             <span className="text-sm font-black">
                                                                                 {modelMetrics.length > 0 && modelMetrics[modelMetrics.length-1].confusionMatrix 
                                                                                     ? [
-                                                                                        modelMetrics[modelMetrics.length-1].confusionMatrix.tp || 22,
-                                                                                        modelMetrics[modelMetrics.length-1].confusionMatrix.fn || 4,
-                                                                                        modelMetrics[modelMetrics.length-1].confusionMatrix.fp || 6,
-                                                                                        modelMetrics[modelMetrics.length-1].confusionMatrix.tn || 20
+                                                                                        modelMetrics[modelMetrics.length-1].confusionMatrix.tp,
+                                                                                        modelMetrics[modelMetrics.length-1].confusionMatrix.fn,
+                                                                                        modelMetrics[modelMetrics.length-1].confusionMatrix.fp,
+                                                                                        modelMetrics[modelMetrics.length-1].confusionMatrix.tn
                                                                                       ][idx]
                                                                                     : '—'}
                                                                             </span>
@@ -969,11 +986,11 @@ function FLDashboard() {
                                                         <CardContent className="px-0">
                                                             <div className="h-[180px] w-full">
                                                                 <ResponsiveContainer width="100%" height="100%">
-                                                                    <BarChart data={[
-                                                                        { name: 'DIAB', p: 85, r: 88 },
-                                                                        { name: 'CVD', p: 79, r: 84 },
-                                                                        { name: 'CAN', p: 92, r: 85 }
-                                                                    ]} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                                                                    <BarChart data={modelMetrics.map(m => ({
+                                                                        name: m.round,
+                                                                        p: (m.precision || 0) * 100,
+                                                                        r: (m.recall || 0) * 100
+                                                                    }))} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                                                                         <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
                                                                         <Bar dataKey="p" fill="#3b82f6" radius={[2, 2, 0, 0]} name="Precision" />
                                                                         <Bar dataKey="r" fill="#f59e0b" radius={[2, 2, 0, 0]} name="Recall" />

@@ -459,8 +459,10 @@ router.post("/rounds/submit", async (req, res) => {
         // Store in database with actual verification status
         await db.query(
             `INSERT INTO fl_contributions 
-       (round_id, participant_address, model_update_ipfs, zk_proof_hash, local_accuracy, local_loss, samples_trained, zk_proof_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+       (round_id, participant_address, model_update_ipfs, zk_proof_hash, 
+        local_accuracy, local_loss, local_precision, local_recall, local_f1, local_auc, local_cm,
+        samples_trained, zk_proof_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
                 roundId,
                 req.user?.walletAddress || "test-participant",
@@ -468,6 +470,11 @@ router.post("/rounds/submit", async (req, res) => {
                 proof.proofHash,
                 trainingMetrics.accuracy,
                 trainingMetrics.loss,
+                trainingMetrics.precision || null,
+                trainingMetrics.recall || null,
+                trainingMetrics.f1 || null,
+                trainingMetrics.auc || null,
+                trainingMetrics.confusionMatrix ? JSON.stringify(trainingMetrics.confusionMatrix) : null,
                 trainingMetrics.samplesTrained,
                 isVerified
             ]
@@ -527,6 +534,10 @@ router.post("/rounds/aggregate", async (req, res) => {
                     modelWeights: model.modelWeights,
                     accuracy: parseFloat(c.local_accuracy),
                     loss: parseFloat(c.local_loss),
+                    precision: parseFloat(c.local_precision),
+                    recall: parseFloat(c.local_recall),
+                    f1Score: parseFloat(c.local_f1),
+                    auc: parseFloat(c.local_auc),
                     samplesTrained: c.samples_trained
                 };
             })
@@ -553,10 +564,44 @@ router.post("/rounds/aggregate", async (req, res) => {
         // Update database
         await db.query(
             `UPDATE fl_rounds 
-       SET status = 'aggregating', aggregated_model_ipfs = $1 
-       WHERE round_id = $2`,
-            [aggregatedIPFS, roundId]
+       SET status = 'completed', 
+           aggregated_model_ipfs = $1,
+           avg_precision = $2,
+           avg_recall = $3,
+           avg_f1 = $4,
+           avg_auc = $5,
+           end_time = CURRENT_TIMESTAMP
+       WHERE round_id = $6`,
+            [
+                aggregatedIPFS, 
+                aggregatedModel.precision,
+                aggregatedModel.recall,
+                aggregatedModel.f1Score,
+                aggregatedModel.auc,
+                roundId
+            ]
         );
+
+        // Update model registry with latest metrics
+        const modelIdResult = await db.query(`SELECT model_id FROM fl_rounds WHERE round_id = $1`, [roundId]);
+        if (modelIdResult.rows.length > 0) {
+            const modelId = modelIdResult.rows[0].model_id;
+            await db.query(
+                `UPDATE fl_models 
+                 SET accuracy = $1, loss = $2, precision = $3, recall = $4, f1_score = $5, auc = $6,
+                     current_round = current_round + 1, updated_at = CURRENT_TIMESTAMP
+                 WHERE model_id = $7`,
+                [
+                    aggregatedModel.accuracy, 
+                    aggregatedModel.loss,
+                    aggregatedModel.precision,
+                    aggregatedModel.recall,
+                    aggregatedModel.f1Score,
+                    aggregatedModel.auc,
+                    modelId
+                ]
+            );
+        }
 
         res.json({
             success: true,
@@ -896,12 +941,16 @@ router.get("/metrics/:modelId", async (req, res) => {
         r.status,
         COUNT(c.contribution_id) as contributions,
         AVG(c.local_accuracy) as avg_accuracy,
-        AVG(c.local_loss) as avg_loss
+        AVG(c.local_loss) as avg_loss,
+        AVG(c.local_precision) as avg_precision,
+        AVG(c.local_recall) as avg_recall,
+        AVG(c.local_f1) as avg_f1,
+        AVG(c.local_auc) as avg_auc
        FROM fl_rounds r
        LEFT JOIN fl_contributions c ON r.round_id = c.round_id
        WHERE r.model_id = $1
        GROUP BY r.round_id, r.round_number, r.status
-       ORDER BY r.round_number`,
+       ORDER BY r.round_number ASC`,
             [modelId]
         );
 

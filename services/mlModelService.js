@@ -311,6 +311,8 @@ function federatedAverage(modelUpdates) {
     });
 
     // Weighted average of all models
+    let aggregatedCM = [[0, 0], [0, 0]];
+    
     modelUpdates.forEach(update => {
         const weight = update.samplesTrained / totalSamples;
 
@@ -319,11 +321,23 @@ function federatedAverage(modelUpdates) {
                 aggregatedModel[layer][index] += value * weight;
             });
         });
+
+        // Sum confusion matrix values (TP, FN, FP, TN)
+        if (update.confusionMatrix && Array.isArray(update.confusionMatrix) && update.confusionMatrix.length === 2) {
+            aggregatedCM[0][0] += (update.confusionMatrix[0][0] || 0);
+            aggregatedCM[0][1] += (update.confusionMatrix[0][1] || 0);
+            aggregatedCM[1][0] += (update.confusionMatrix[1][0] || 0);
+            aggregatedCM[1][1] += (update.confusionMatrix[1][1] || 0);
+        }
     });
 
     // Calculate aggregated metrics
-    const avgAccuracy = modelUpdates.reduce((sum, u) => sum + u.accuracy, 0) / modelUpdates.length;
-    const avgLoss = modelUpdates.reduce((sum, u) => sum + u.loss, 0) / modelUpdates.length;
+    const avgAccuracy = modelUpdates.reduce((sum, u) => sum + (u.accuracy || 0), 0) / modelUpdates.length;
+    const avgLoss = modelUpdates.reduce((sum, u) => sum + (u.loss || 0), 0) / modelUpdates.length;
+    const avgPrecision = modelUpdates.reduce((sum, u) => sum + (u.precision || 0), 0) / modelUpdates.length;
+    const avgRecall = modelUpdates.reduce((sum, u) => sum + (u.recall || 0), 0) / modelUpdates.length;
+    const avgF1 = modelUpdates.reduce((sum, u) => sum + (u.f1Score || 0), 0) / modelUpdates.length;
+    const avgAUC = modelUpdates.reduce((sum, u) => sum + (u.auc || 0), 0) / modelUpdates.length;
 
     console.log(`✅ Aggregation complete - Avg Accuracy: ${(avgAccuracy * 100).toFixed(2)}%`);
 
@@ -331,6 +345,11 @@ function federatedAverage(modelUpdates) {
         modelWeights: aggregatedModel,
         accuracy: avgAccuracy,
         loss: avgLoss,
+        precision: avgPrecision,
+        recall: avgRecall,
+        f1Score: avgF1,
+        auc: avgAUC,
+        confusionMatrix: aggregatedCM,
         participantCount: modelUpdates.length,
         totalSamples
     };
