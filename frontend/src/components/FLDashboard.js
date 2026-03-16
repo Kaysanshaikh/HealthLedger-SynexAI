@@ -6,10 +6,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { useAuth } from '../context/AuthContext';
 import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Trash2, AlertCircle, CheckCircle2, X, BarChart2, LineChart as LineChartIcon, Maximize2 } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from './ui/alert';
-import DatasetSelectionModal from './DatasetSelectionModal';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Maximize2 } from 'lucide-react';
 
 const API_URL = '/fl';
 
@@ -73,7 +70,7 @@ function FLDashboard() {
     const [selectedEvaluationDisease, setSelectedEvaluationDisease] = useState('diabetes');
     const [globalStats, setGlobalStats] = useState({
         totalModels: 0,
-        totalParticipants: 3,
+        totalParticipants: 0,
         avgAccuracy: 0,
         network: 'Polygon Amoy'
     });
@@ -991,9 +988,18 @@ function FLDashboard() {
                                                         <CardContent className="px-0">
                                                             <div className="h-[180px] w-full">
                                                                 <ResponsiveContainer width="100%" height="100%">
-                                                                    <LineChart data={[
-                                                                        { x: 0, y: 0 }, { x: 0.1, y: 0.4 }, { x: 0.2, y: 0.7 }, { x: 0.4, y: 0.85 }, { x: 0.7, y: 0.95 }, { x: 1, y: 1 }
-                                                                    ]} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                                                                    <LineChart data={(() => {
+                                                                        const auc = modelMetrics.length > 0 && modelMetrics[modelMetrics.length-1].auc ? parseFloat(modelMetrics[modelMetrics.length-1].auc) : 0.5;
+                                                                        const pull = auc > 0.5 ? auc : 0.5;
+                                                                        return [
+                                                                            { x: 0, y: 0 }, 
+                                                                            { x: 0.1, y: pull * 0.35 }, 
+                                                                            { x: 0.3, y: pull * 0.8 }, 
+                                                                            { x: 1 - pull > 0.1 ? 1 - pull : 0.1, y: pull }, 
+                                                                            { x: 0.8, y: pull + ((1 - pull) * 0.6) }, 
+                                                                            { x: 1, y: 1 }
+                                                                        ];
+                                                                    })()} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                                                                         <XAxis dataKey="x" type="number" domain={[0, 1]} hide />
                                                                         <YAxis dataKey="y" type="number" domain={[0, 1]} hide />
                                                                         <Line type="monotone" dataKey="y" stroke="#10b981" strokeWidth={3} dot={false} isAnimationActive={true} />
