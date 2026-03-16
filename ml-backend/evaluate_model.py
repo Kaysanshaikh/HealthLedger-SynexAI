@@ -2,8 +2,12 @@ import sys
 import json
 import numpy as np
 import os
+
+# Ensure local modules are findable
+sys.path.append(os.path.dirname(__file__))
+
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score
 from kaggle_loader import load_dataset, get_train_test_split
 
 def evaluate(input_data):
@@ -32,6 +36,7 @@ def evaluate(input_data):
         
         # Predict on real test set
         y_pred = model.predict(X_test)
+        y_prob = model.predict_proba(X_test)[:, 1]
         
         # Calculate production metrics
         acc = accuracy_score(y_test, y_pred)
@@ -39,12 +44,14 @@ def evaluate(input_data):
         rec = recall_score(y_test, y_pred, zero_division=0)
         f1 = f1_score(y_test, y_pred, zero_division=0)
         cm = confusion_matrix(y_test, y_pred).tolist()
+        auc = roc_auc_score(y_test, y_prob)
         
         return {
             "accuracy": float(acc),
             "precision": float(prec),
             "recall": float(rec),
             "f1Score": float(f1),
+            "auc": float(auc),
             "confusionMatrix": cm,
             "samples": len(X_test)
         }

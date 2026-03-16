@@ -1,8 +1,12 @@
+import os
 import sys
 import json
+
+# Ensure local modules are findable
+sys.path.append(os.path.dirname(__file__))
+
 import numpy as np
 import time
-import os
 import logging
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -118,7 +122,7 @@ def train(input_data):
                     if np.mean(row) > np.median(row):
                         y_custom[i] = 1
                 
-                if X_all is not None:
+                if X_all is not None and y_all is not None:
                     # Combined mode: merge kaggle + medical records
                     # Ensure same number of features by padding/truncating
                     n_features = X_all.shape[1]
@@ -142,17 +146,18 @@ def train(input_data):
             return {"error": f"No training data available for {disease}. Check dataset files or medical records."}
         
         # Apply sample count limit
-        if sample_count and sample_count < len(X_all):
+        if sample_count and X_all is not None and y_all is not None and sample_count < len(X_all):
             # Sample with class balancing constraint (attempt stratify if classes known/available)
             try:
                 # Need to import train_test_split to do stratified sampling easily
                 from sklearn.model_selection import train_test_split
                 X_all, _, y_all, _ = train_test_split(X_all, y_all, train_size=sample_count, stratify=y_all, random_state=42)
-            except ValueError:
-                # If only 1 class or not enough members, fall back to random
-                indices = np.random.choice(len(X_all), sample_count, replace=False)
-                X_all = X_all[indices]
-                y_all = y_all[indices]
+            except (ValueError, ImportError):
+                # If only 1 class or not enough members, or import fails, fall back to random
+                if X_all is not None and y_all is not None:
+                    indices = np.random.choice(len(X_all), sample_count, replace=False)
+                    X_all = X_all[indices]
+                    y_all = y_all[indices]
             
             logger.info(f"📊 Limited to {sample_count} samples")
         
@@ -219,8 +224,8 @@ def train(input_data):
             "loss": float(loss),
             "trainingTime": training_time,
             "metrics": {
-                "samples": len(X_train),
-                "test_samples": len(X_test),
+                "samples": len(X_train) if X_train is not None else 0,
+                "test_samples": len(X_test) if X_test is not None else 0,
                 "precision": float(precision),
                 "recall": float(recall),
                 "f1": float(f1),
@@ -228,7 +233,7 @@ def train(input_data):
                 "iterations": iterations,
                 "modelType": model_type,
                 "dataSource": data_source,
-                "totalAvailable": len(X_all)
+                "totalAvailable": len(X_all) if X_all is not None else 0
             }
         }
         

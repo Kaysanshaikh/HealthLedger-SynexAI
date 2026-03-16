@@ -272,7 +272,8 @@ async function evaluateModel(model, testData) {
             precision: result.precision,
             recall: result.recall,
             f1Score: result.f1Score,
-            confusionMatrix: result.confusionMatrix
+            confusionMatrix: result.confusionMatrix,
+            auc: result.auc
         };
 
     } catch (error) {
