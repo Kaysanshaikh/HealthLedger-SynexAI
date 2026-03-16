@@ -332,14 +332,15 @@ function federatedAverage(modelUpdates) {
 }
 
 /**
- * Byzantine-robust aggregation (Krum algorithm)
+ * Byzantine-robust aggregation (Multi-Krum algorithm)
  * @param {Array} modelUpdates - Model updates
  * @param {number} f - Number of Byzantine participants to tolerate
  * @returns {Object} Robust aggregated model
  */
 function byzantineRobustAggregation(modelUpdates, f = 1) {
-    console.log(`🛡️  Byzantine-robust aggregation (Krum, f=${f})...`);
+    console.log(`🛡️  Byzantine-robust aggregation (Multi-Krum, f=${f})...`);
 
+    // In Multi-Krum, we select n-f updates to average
     if (modelUpdates.length < 2 * f + 3) {
         console.warn("⚠️  Not enough participants for Byzantine robustness, using FedAvg");
         return federatedAverage(modelUpdates);
@@ -353,37 +354,40 @@ function byzantineRobustAggregation(modelUpdates, f = 1) {
 
         for (let j = 0; j < modelUpdates.length; j++) {
             if (i !== j) {
-                const dist = calculateModelDistance(
+                // Score(i) = sum of squared Euclidean distances to n-f-2 nearest neighbors
+                const distSq = calculateModelSquaredDistance(
                     modelUpdates[i].modelWeights,
                     modelUpdates[j].modelWeights
                 );
-                scores.push(dist);
+                scores.push(distSq);
             }
         }
 
-        // Sum of n-f-2 smallest distances
+        // Krum Score for i is the sum of (n-f-2) smallest distances
         scores.sort((a, b) => a - b);
         const krumScore = scores.slice(0, modelUpdates.length - f - 2).reduce((a, b) => a + b, 0);
 
         distances.push({ index: i, score: krumScore });
     }
 
-    // Select model with smallest Krum score
+    // Sort by Krum score (lowest is most honest)
     distances.sort((a, b) => a.score - b.score);
+    
+    // Select the n-f best models (Multi-Krum approach)
     const selectedModels = distances.slice(0, modelUpdates.length - f).map(d => modelUpdates[d.index]);
 
-    console.log(`✅ Selected ${selectedModels.length} honest models`);
+    console.log(`✅ Selected ${selectedModels.length} honest models based on lowest Krum scores`);
 
     return federatedAverage(selectedModels);
 }
 
 /**
- * Calculate Euclidean distance between two models
+ * Calculate Squared Euclidean distance between two models
  * @param {Object} model1 - First model
  * @param {Object} model2 - Second model
- * @returns {number} Distance
+ * @returns {number} Distance squared
  */
-function calculateModelDistance(model1, model2) {
+function calculateModelSquaredDistance(model1, model2) {
     let sumSquaredDiff = 0;
     let count = 0;
 
@@ -395,7 +399,8 @@ function calculateModelDistance(model1, model2) {
         });
     });
 
-    return Math.sqrt(sumSquaredDiff / count);
+    // Return the sum of squared differences (canonical Krum score component)
+    return sumSquaredDiff;
 }
 
 // ============================================
@@ -634,7 +639,7 @@ module.exports = {
     // Aggregation
     federatedAverage,
     byzantineRobustAggregation,
-    calculateModelDistance,
+    calculateModelSquaredDistance,
 
     // Encryption
     encryptData,
