@@ -857,7 +857,7 @@ function FLDashboard() {
                                                                 {selectedEvaluationDisease}
                                                             </div>
                                                             <div className="px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-wider border border-border/50">
-                                                                {flModels.find(m => m.model_id === selectedModelForMetrics)?.modelType || 'Generic'}
+                                                                {models.find(m => m.model_id === selectedModelForMetrics)?.modelType || 'Generic'}
                                                             </div>
                                                         </div>
                                                         <p className="text-[10px] text-muted-foreground font-mono">
