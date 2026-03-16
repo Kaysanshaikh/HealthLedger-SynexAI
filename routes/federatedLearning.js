@@ -31,7 +31,7 @@ router.post("/models", async (req, res) => {
         }
 
         const creatorWallet = req.user?.walletAddress || "admin";
-
+        
         // Respond immediately to prevent Render timeout
         res.json({
             success: true,
@@ -65,6 +65,23 @@ router.post("/models", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+/**
+ * PHASE 1: REWARD CALCULATION HELPER
+ * Reward = log2(samples / 100 + 1) * accuracy * 10
+ */
+const calculateReward = (samples, accuracy) => {
+    try {
+        const s = parseInt(samples) || 0;
+        const acc = parseFloat(accuracy) || 0;
+        if (s <= 0) return 0;
+        const logWeight = Math.log2((s / 100) + 1);
+        return parseFloat((logWeight * acc * 10).toFixed(8));
+    } catch (err) {
+        console.error("Reward calculation error:", err);
+        return 0;
+    }
+};
 
 // Get all models
 router.get("/models", async (req, res) => {
@@ -757,6 +774,49 @@ router.post("/rounds/complete", async (req, res) => {
             [avgAccuracy, avgLoss, round.modelId]
         );
 
+        // --- PHASE 1 REWARD INTEGRATION ---
+        // Decoupled reward processing to ensure round completion succeeds
+        (async () => {
+            try {
+                console.log(`🎁 [PHASE 1] Processing rewards for round ${roundId}...`);
+                for (const contribution of contributions.rows) {
+                    if (contribution.zk_proof_verified === false) {
+                        console.log(`⚠️ Skipping reward for ${contribution.participant_address} (ZK proof not verified)`);
+                        continue;
+                    }
+
+                    const rewardAmount = calculateReward(contribution.samples_trained, contribution.local_accuracy);
+                    
+                    console.log(`💰 Calculated Reward for ${contribution.participant_address}: ${rewardAmount} units (${contribution.samples_trained} samples, ${contribution.local_accuracy} acc)`);
+
+                    // 1. Log to database (Phase 1)
+                    await db.query(
+                        `INSERT INTO fl_rewards (contribution_id, participant_address, reward_amount, reward_type)
+                         VALUES ($1, $2, $3, $4)`,
+                        [contribution.contribution_id, contribution.participant_address, rewardAmount, 'training_contribution']
+                    );
+
+                    // 2. Update participant's total in fl_participants
+                    await db.query(
+                        `UPDATE fl_participants 
+                         SET total_rewards = total_rewards + $1, 
+                             total_contributions = total_contributions + 1
+                         WHERE wallet_address = $2`,
+                        [rewardAmount, contribution.participant_address]
+                    );
+
+                    // 3. PHASE 2 PLACEHOLDER: Blockchain call will go here
+                    // try {
+                    //     await flService.distributeReward(parseInt(roundId), contribution.participant_address, rewardAmount);
+                    // } catch (bcErr) { console.error("BC Reward failed:", bcErr.message); }
+                }
+                console.log(`✅ [PHASE 1] Rewards successfully logged for round ${roundId}.`);
+            } catch (rewardErr) {
+                console.error("❌ [PHASE 1 ERROR] Passive reward logging failed:", rewardErr.message);
+                // Fail silently as per user requirement - do not block response
+            }
+        })();
+
         res.json({
             success: true,
             roundId,
@@ -987,6 +1047,54 @@ router.get("/contributions/:participantAddress", async (req, res) => {
 
     } catch (error) {
         console.error("Get contributions error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Admin: Recalculate rewards for a round
+router.post("/rounds/recalculate-rewards", async (req, res) => {
+    try {
+        const { roundId } = req.body;
+        if (!roundId) return res.status(400).json({ error: "Round ID required" });
+
+        // Get contributions
+        const contribs = await db.query(
+            `SELECT * FROM fl_contributions WHERE round_id = $1`,
+            [roundId]
+        );
+
+        const results = [];
+        for (const c of contribs.rows) {
+            const rewardAmount = calculateReward(c.samples_trained, c.local_accuracy);
+            
+            // Check if already rewarded
+            const existing = await db.query(
+                `SELECT * FROM fl_rewards WHERE contribution_id = $1`,
+                [c.contribution_id]
+            );
+
+            if (existing.rows.length > 0) {
+                // Update
+                await db.query(
+                    `UPDATE fl_rewards SET reward_amount = $1 WHERE contribution_id = $2`,
+                    [rewardAmount, c.contribution_id]
+                );
+                results.push({ address: c.participant_address, status: 'updated', amount: rewardAmount });
+            } else {
+                // Insert
+                await db.query(
+                    `INSERT INTO fl_rewards (contribution_id, participant_address, reward_amount, reward_type)
+                     VALUES ($1, $2, $3, $4)`,
+                    [c.contribution_id, c.participant_address, rewardAmount, 'training_contribution_recal']
+                );
+                results.push({ address: c.participant_address, status: 'inserted', amount: rewardAmount });
+            }
+        }
+
+        res.json({ success: true, results });
+
+    } catch (error) {
+        console.error("Recalculate rewards error:", error);
         res.status(500).json({ error: error.message });
     }
 });

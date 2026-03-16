@@ -163,3 +163,14 @@ CREATE TRIGGER update_doctor_profiles_updated_at BEFORE UPDATE ON doctor_profile
 
 CREATE TRIGGER update_diagnostic_profiles_updated_at BEFORE UPDATE ON diagnostic_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Federated Learning Rewards
+CREATE TABLE IF NOT EXISTS fl_rewards (
+    reward_id SERIAL PRIMARY KEY,
+    contribution_id INTEGER, -- Link to contribution (optional cascade if linked to rounds)
+    participant_address VARCHAR(42) NOT NULL,
+    reward_amount DECIMAL(18,8) NOT NULL,
+    reward_type VARCHAR(50), 
+    blockchain_tx_hash VARCHAR(66),
+    distributed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

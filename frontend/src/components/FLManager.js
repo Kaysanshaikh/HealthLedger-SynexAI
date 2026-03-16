@@ -37,6 +37,7 @@ const FLManager = () => {
     });
     const [notification, setNotification] = useState(null);
     const [isParticipant, setIsParticipant] = useState(false);
+    const [participantData, setParticipantData] = useState(null);
     const [registering, setRegistering] = useState(false);
 
     // Auto-dismiss notification
@@ -135,11 +136,14 @@ const FLManager = () => {
                     const participantRes = await client.get(`${API_URL}/participants/${user.walletAddress}`);
                     if (participantRes.data.success && participantRes.data.participant?.isActive) {
                         setIsParticipant(true);
+                        setParticipantData(participantRes.data.participant);
                     } else {
                         setIsParticipant(false);
+                        setParticipantData(null);
                     }
                 } catch (err) {
                     setIsParticipant(false);
+                    setParticipantData(null);
                 }
             }
         } catch (err) {
@@ -274,6 +278,34 @@ const FLManager = () => {
     };
 
 
+    // Reputation Tier Logic
+    const reputationTier = useMemo(() => {
+        if (!participantData) return null;
+        const rewards = parseFloat(participantData.total_rewards || participantData.totalRewards) || 0;
+        
+        if (rewards >= 500) return { 
+            name: 'Gold Research Partner', 
+            color: 'text-amber-500', 
+            bg: 'bg-amber-500/10', 
+            border: 'border-amber-500/30',
+            fill: 'fill-amber-500/20'
+        };
+        if (rewards >= 100) return { 
+            name: 'Silver Research Partner', 
+            color: 'text-slate-400', 
+            bg: 'bg-slate-400/10', 
+            border: 'border-slate-400/30',
+            fill: 'fill-slate-400/20'
+        };
+        return { 
+            name: 'Bronze Research Partner', 
+            color: 'text-orange-400', 
+            bg: 'bg-orange-400/10', 
+            border: 'border-orange-400/30',
+            fill: 'fill-orange-400/20'
+        };
+    }, [participantData]);
+
     // Safety check: Doctors shouldn't see or access the FL Console
     if (user?.role === 'doctor') {
         return null;
@@ -359,6 +391,64 @@ const FLManager = () => {
                     </CardContent>
                 </Card>
             </div>
+            
+            {/* Rewards & Reputation Section (Phase 3) */}
+            {isParticipant && participantData && (
+                <div className="grid gap-4 md:grid-cols-2 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <Card className="border-primary/10 bg-primary/5 overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                            <Zap className="h-32 w-32 text-primary" />
+                        </div>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                                <Activity className="h-3.5 w-3.5 text-primary" />
+                                <CardTitle className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/80">Contribution Incentives</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-baseline gap-2">
+                                <div className="text-4xl font-black text-primary tracking-tighter">
+                                    {(parseFloat(participantData.total_rewards || participantData.totalRewards) || 0).toFixed(2)}
+                                </div>
+                                <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40">FL Credits</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono uppercase tracking-widest">
+                                Proof of Contribution Verified: {participantData.total_contributions || 0} Rounds
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className={`border ${reputationTier?.border} ${reputationTier?.bg} relative overflow-hidden group`}>
+                         <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                            <Shield className={`h-32 w-32 ${reputationTier?.color}`} />
+                        </div>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                                <Shield className={`h-3.5 w-3.5 ${reputationTier?.color}`} />
+                                <CardTitle className={`text-[10px] font-bold uppercase tracking-[0.2em] ${reputationTier?.color} opacity-80`}>Network Reputation</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className={`text-xl font-black ${reputationTier?.color} uppercase tracking-tight`}>
+                                {reputationTier?.name}
+                            </div>
+                            <div className="flex items-center gap-3 mt-3">
+                                <div className="h-1.5 flex-1 bg-muted/30 rounded-full overflow-hidden border border-border/5">
+                                    <div 
+                                        className={`h-full transition-all duration-1000 ${reputationTier?.color.replace('text-', 'bg-')}`} 
+                                        style={{ width: `${Math.min(100, ((parseFloat(participantData.total_rewards || participantData.totalRewards) || 0) / (parseFloat(participantData.total_rewards || participantData.totalRewards) >= 100 ? 500 : 100)) * 100)}%` }} 
+                                    />
+                                </div>
+                                <span className="text-[9px] font-bold text-muted-foreground/50 uppercase whitespace-nowrap">
+                                    {reputationTier?.name === 'Gold Research Partner' 
+                                        ? 'Eminent Tier' 
+                                        : `Next Tier: ${Math.max(0, (parseFloat(participantData.total_rewards || participantData.totalRewards) >= 100 ? 500 : 100) - (parseFloat(participantData.total_rewards || participantData.totalRewards) || 0)).toFixed(0)} pts`}
+                                </span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {/* Registration Callout for Participants */}
             {!isParticipant && user?.role !== 'admin' && (

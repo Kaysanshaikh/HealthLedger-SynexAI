@@ -384,17 +384,35 @@ async function reportByzantineAttack(roundId, participantAddress, reason) {
 // REWARDS
 // ============================================
 
-/**
- * Distribute reward
- * @param {number} roundId - Round ID
- * @param {string} participantAddress - Participant address
- * @param {number} amount - Reward amount
- * @returns {Promise<Object>} Transaction receipt
- */
 async function distributeReward(roundId, participantAddress, amount) {
-    const { contract } = requireBlockchain();
-    const tx = await contract.distributeReward(roundId, participantAddress, amount);
-    return await tx.wait();
+    try {
+        if (!isBlockchainAvailable()) {
+            console.warn("⚠️ Blockchain unavailable for reward distribution. Skipping.");
+            return null;
+        }
+
+        const { contract } = requireBlockchain();
+        
+        // Scale reward for on-chain storage (keeping 2 decimal places as integers)
+        const scaledAmount = Math.floor(amount * 100);
+        
+        console.log(`📡 [PHASE 2] Distributing reward on-chain: Round ${roundId}, Participant ${participantAddress}, Amount ${amount} (${scaledAmount} scaled)`);
+
+        const tx = await contract.distributeReward(
+            parseInt(roundId),
+            participantAddress,
+            scaledAmount,
+            { gasLimit: 500000 } // Safety gas limit for Amoy
+        );
+
+        const receipt = await tx.wait();
+        console.log(`✅ [PHASE 2] Reward distributed successfully: ${receipt.hash}`);
+        return receipt;
+    } catch (err) {
+        // Essential: Log failure but do NOT throw - isolated Phase 2 safety
+        console.error(`❌ [PHASE 2 ERROR] Reward distribution failed for ${participantAddress}:`, err.message);
+        return null;
+    }
 }
 
 /**
