@@ -506,12 +506,23 @@ exports.getGrantedDoctors = async (req, res) => {
 
 exports.createDiagnosticReport = async (req, res) => {
   try {
-    const { patientHHNumber, testName, testType, results, notes, ipfsCID, diagnosticHHNumber, fileName, fileType, fileSize, healthMetrics } = req.body;
+    const { patientHHNumber, testName, testType, results, notes, ipfsCID, diagnosticHHNumber, fileName, fileType, fileSize } = req.body;
+    let { healthMetrics } = req.body;
 
-    console.log("📋 Creating diagnostic report:", req.body);
+    console.log("📋 Creating diagnostic report:", { ...req.body, healthMetrics: healthMetrics ? '[PRESENT]' : '[MISSING]' });
 
     if (!patientHHNumber || !testName || !testType || !results) {
       return res.status(400).json({ error: "Patient HH Number, Test Name, Test Type, and Results are required" });
+    }
+
+    // Since this might come from FormData, healthMetrics could be a JSON string
+    if (typeof healthMetrics === 'string') {
+        try {
+            healthMetrics = JSON.parse(healthMetrics);
+        } catch (e) {
+            console.warn("⚠️ Failed to parse healthMetrics JSON string:", e.message);
+            healthMetrics = [];
+        }
     }
 
     // Create a unique record ID based on patient HH number and timestamp
