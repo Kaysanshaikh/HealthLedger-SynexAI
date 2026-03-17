@@ -43,7 +43,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                 if (user?.role === 'patient') {
                     if (res.data.medicalRecords?.totalRecords > 0) {
                         setTrainability(prev => ({ ...prev, loading: true }));
-                        const trainRes = await client.get(`${API_URL}/trainability-check/${disease}?hhNumber=${user.hh_number}`);
+                        const trainRes = await client.get(`${API_URL}/trainability-check/${disease}?hhNumber=${user.hhNumber}`);
                         setTrainability({
                             isTrainable: trainRes.data.isTrainable,
                             reason: trainRes.data.reason,
@@ -112,7 +112,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                 modelId,
                 dataSource,
                 sampleCount: sampleCount || undefined,
-                hhNumber: user?.hh_number // Send patient context if available
+                hhNumber: user?.hhNumber // Send patient context if available
             });
 
             if (!trainRes.data.success) {

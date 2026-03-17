@@ -305,6 +305,13 @@ const FLManager = () => {
             fill: 'fill-orange-400/20'
         };
     }, [participantData]);
+    
+    // Calculate pending contributions (exists in localStorage/DB but not yet reflected in total_contributions)
+    const pendingContributions = useMemo(() => {
+        if (!userContributions.length) return 0;
+        const verifiedCount = parseInt(participantData?.total_contributions || 0);
+        return Math.max(0, userContributions.length - verifiedCount);
+    }, [userContributions, participantData]);
 
     // Safety check: Doctors shouldn't see or access the FL Console
     if (user?.role === 'doctor') {
@@ -412,8 +419,14 @@ const FLManager = () => {
                                 </div>
                                 <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40">FL Credits</span>
                             </div>
-                            <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono uppercase tracking-widest">
-                                Proof of Contribution Verified: {participantData.total_contributions || 0} Rounds
+                            <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono uppercase tracking-widest flex items-center gap-2">
+                                <span>Proof of Contribution Verified: {participantData.total_contributions || 0} Rounds</span>
+                                {pendingContributions > 0 && (
+                                    <span className="flex items-center gap-1 text-amber-500 font-bold animate-pulse">
+                                        <RefreshCw className="h-2 w-2 animate-spin" />
+                                        {pendingContributions} Pending Verification
+                                    </span>
+                                )}
                             </p>
                         </CardContent>
                     </Card>

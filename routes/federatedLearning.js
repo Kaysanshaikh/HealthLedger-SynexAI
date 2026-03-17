@@ -4,13 +4,14 @@ const flService = require("../services/federatedLearningService");
 const zkProofService = require("../services/zkProofService");
 const mlModelService = require("../services/mlModelService");
 const db = require("../services/databaseService");
+const authMiddleware = require("../middleware/authMiddleware");
 
 // ============================================
 // FL MODEL MANAGEMENT
 // ============================================
 
 // Create new FL model
-router.post("/models", async (req, res) => {
+router.post("/models", authMiddleware, async (req, res) => {
     try {
         const { disease, modelType } = req.body;
 
@@ -30,7 +31,7 @@ router.post("/models", async (req, res) => {
             });
         }
 
-        const creatorWallet = req.user?.walletAddress || "admin";
+        const creatorWallet = req.user.walletAddress;
         
         // Respond immediately to prevent Render timeout
         res.json({
@@ -102,7 +103,7 @@ router.get("/models", async (req, res) => {
 });
 
 // Delete model (Admin only)
-router.delete("/models/:modelId", async (req, res) => {
+router.delete("/models/:modelId", authMiddleware, async (req, res) => {
     try {
         const { modelId } = req.params;
 
@@ -220,7 +221,7 @@ router.get("/models/:modelId", async (req, res) => {
 // ============================================
 
 // Start new training round
-router.post("/rounds/start", async (req, res) => {
+router.post("/rounds/start", authMiddleware, async (req, res) => {
     try {
         const { modelId } = req.body;
 
@@ -266,7 +267,7 @@ router.post("/rounds/start", async (req, res) => {
 });
 
 // Local training for FL round (supports Kaggle, medical records, or combined)
-router.post("/rounds/train", async (req, res) => {
+router.post("/rounds/train", authMiddleware, async (req, res) => {
     try {
         const { modelId, samples, dataSource, sampleCount } = req.body;
 
@@ -421,7 +422,7 @@ router.get("/trainability-check/:disease", async (req, res) => {
 });
 
 // Submit model update
-router.post("/rounds/submit", async (req, res) => {
+router.post("/rounds/submit", authMiddleware, async (req, res) => {
     try {
         const { roundId, modelWeights, trainingMetrics } = req.body;
 
@@ -482,7 +483,7 @@ router.post("/rounds/submit", async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
                 roundId,
-                req.user?.walletAddress || "test-participant",
+                req.user.walletAddress,
                 modelUpdateIPFS,
                 proof.proofHash,
                 trainingMetrics.accuracy,
@@ -525,7 +526,7 @@ router.post("/rounds/submit", async (req, res) => {
 });
 
 // Aggregate models
-router.post("/rounds/aggregate", async (req, res) => {
+router.post("/rounds/aggregate", authMiddleware, async (req, res) => {
     try {
         const { roundId } = req.body;
 
@@ -665,7 +666,7 @@ router.get("/rounds/active/:modelId", async (req, res) => {
 });
 
 // Complete/finalize a round
-router.post("/rounds/complete", async (req, res) => {
+router.post("/rounds/complete", authMiddleware, async (req, res) => {
     try {
         const { roundId } = req.body;
 
@@ -874,7 +875,7 @@ router.get("/rounds/:roundId", async (req, res) => {
 });
 
 // Update minimum participants configuration
-router.post("/config/min-participants", async (req, res) => {
+router.post("/config/min-participants", authMiddleware, async (req, res) => {
     try {
         const { minParticipants } = req.body;
 
@@ -1052,7 +1053,7 @@ router.get("/contributions/:participantAddress", async (req, res) => {
 });
 
 // Admin: Recalculate rewards for a round
-router.post("/rounds/recalculate-rewards", async (req, res) => {
+router.post("/rounds/recalculate-rewards", authMiddleware, async (req, res) => {
     try {
         const { roundId } = req.body;
         if (!roundId) return res.status(400).json({ error: "Round ID required" });
