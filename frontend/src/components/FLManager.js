@@ -31,7 +31,7 @@ const FLManager = () => {
     const [trainingModalModel, setTrainingModalModel] = useState(null); // { modelId, disease }
     const [globalStats, setGlobalStats] = useState({
         totalModels: 0,
-        totalParticipants: 3,
+        totalParticipants: 0,
         avgAccuracy: 0,
         network: 'Polygon Amoy'
     });

@@ -13,6 +13,7 @@ import client from "../api/client";
 // Disease-specific metric presets for structured health data entry
 const METRIC_PRESETS = {
   metabolic: [
+    { name: 'Diagnosis', unit: '0-1', placeholder: '0=negative, 1=positive' },
     { name: 'Glucose', unit: 'mg/dL', placeholder: 'e.g., 120' },
     { name: 'BMI', unit: 'kg/m²', placeholder: 'e.g., 28.5' },
     { name: 'Insulin', unit: 'µU/mL', placeholder: 'e.g., 80' },
@@ -24,6 +25,7 @@ const METRIC_PRESETS = {
     { name: 'Diabetes Pedigree Function', unit: '', placeholder: 'e.g., 0.627' },
   ],
   cardiovascular: [
+    { name: 'Diagnosis', unit: '0-1', placeholder: '0=negative, 1=positive' },
     { name: 'Cholesterol', unit: 'mg/dL', placeholder: 'e.g., 200' },
     { name: 'Resting Blood Pressure', unit: 'mmHg', placeholder: 'e.g., 140' },
     { name: 'Max Heart Rate', unit: 'bpm', placeholder: 'e.g., 150' },
@@ -36,6 +38,7 @@ const METRIC_PRESETS = {
     { name: 'Sex', unit: '0-1', placeholder: '0=female, 1=male' },
   ],
   genomics: [
+    { name: 'Diagnosis', unit: '0-1', placeholder: '0=benign, 1=malignant' },
     { name: 'Radius Mean', unit: '', placeholder: 'e.g., 17.99' },
     { name: 'Texture Mean', unit: '', placeholder: 'e.g., 10.38' },
     { name: 'Perimeter Mean', unit: '', placeholder: 'e.g., 122.8' },
@@ -47,6 +50,7 @@ const METRIC_PRESETS = {
     { name: 'Fractal Dimension Mean', unit: '', placeholder: 'e.g., 0.07871' },
   ],
   respiratory: [
+    { name: 'Diagnosis', unit: '0-1', placeholder: '0=negative, 1=positive' },
     { name: 'FEV1', unit: 'L', placeholder: 'e.g., 3.5' },
     { name: 'FVC', unit: 'L', placeholder: 'e.g., 4.2' },
     { name: 'SpO2', unit: '%', placeholder: 'e.g., 98' },
