@@ -746,7 +746,7 @@ function FLDashboard() {
                                                     <CardContent className="px-6 pb-6">
                                                         <div className="h-[350px] w-full">
                                                             <ResponsiveContainer width="100%" height="100%">
-                                                                <AreaChart data={modelMetrics} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                                                <LineChart data={modelMetrics} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                                                     <defs>
                                                                         <linearGradient id="colorAcc" x1="0" y1="0" x2="0" y2="1">
                                                                             <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
@@ -757,7 +757,7 @@ function FLDashboard() {
                                                                             <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
                                                                         </linearGradient>
                                                                     </defs>
-                                                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                                                                     <XAxis 
                                                                         dataKey="round" 
                                                                         stroke="#666" 
@@ -784,6 +784,7 @@ function FLDashboard() {
                                                                         axisLine={false}
                                                                     />
                                                                     <Tooltip
+                                                                        cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }}
                                                                         contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', padding: '12px' }}
                                                                         itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '12px' }}
                                                                         labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
@@ -796,29 +797,27 @@ function FLDashboard() {
                                                                         iconType="circle"
                                                                         wrapperStyle={{ paddingBottom: '20px', fontSize: '11px', fontWeight: 'bold', color: 'hsl(var(--foreground))' }} 
                                                                     />
-                                                                    <Area
+                                                                    <Line
                                                                         yAxisId="left"
                                                                         type="monotone"
                                                                         dataKey="accuracy"
                                                                         name="Accuracy"
                                                                         stroke="#10b981"
-                                                                        strokeWidth={3}
-                                                                        fillOpacity={1}
-                                                                        fill="url(#colorAcc)"
+                                                                        strokeWidth={4}
+                                                                        dot={{ r: 4, fill: "#10b981", strokeWidth: 2, stroke: "hsl(var(--background))" }}
                                                                         activeDot={{ r: 6, strokeWidth: 0 }}
                                                                     />
-                                                                    <Area
+                                                                    <Line
                                                                         yAxisId="right"
                                                                         type="monotone"
                                                                         dataKey="loss"
                                                                         name="Model Loss"
                                                                         stroke="#ef4444"
-                                                                        strokeWidth={2}
-                                                                        fillOpacity={1}
-                                                                        fill="url(#colorLoss)"
+                                                                        strokeWidth={3}
+                                                                        dot={{ r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "hsl(var(--background))" }}
                                                                         strokeDasharray="5 5"
                                                                     />
-                                                                </AreaChart>
+                                                                </LineChart>
                                                             </ResponsiveContainer>
                                                         </div>
                                                     </CardContent>
@@ -851,7 +850,7 @@ function FLDashboard() {
                                                         <div className="h-[350px] w-full">
                                                             <ResponsiveContainer width="100%" height="100%">
                                                                 <BarChart data={modelMetrics} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                                                                     <XAxis dataKey="round" stroke="#666" fontSize={11} tickLine={false} axisLine={false} />
                                                                     <YAxis stroke="#666" fontSize={11} tickLine={false} axisLine={false} />
                                                                     <Tooltip
@@ -1150,32 +1149,22 @@ function FLDashboard() {
                             <div className="h-full w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     {maximizedChart === 'learning' ? (
-                                        <AreaChart data={modelMetrics} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                                            <defs>
-                                                <linearGradient id="modalColorAcc" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                                </linearGradient>
-                                                <linearGradient id="modalColorLoss" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.15}/>
-                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                        <LineChart data={modelMetrics} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#222" />
                                             <XAxis dataKey="round" stroke="#666" fontSize={12} tickLine={false} axisLine={false} tickMargin={10} />
                                             <YAxis yAxisId="left" domain={[0, 100]} stroke="#666" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
                                             <YAxis yAxisId="right" orientation="right" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                                             <Tooltip 
-                                                cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                                cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }}
                                                 contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px', padding: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2)' }}
                                                 itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '14px' }}
                                                 labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold', marginBottom: '8px' }}
                                                 formatter={(v, n) => [n === 'Accuracy' ? `${v.toFixed(2)}%` : v.toFixed(5), n]}
                                             />
                                             <Legend verticalAlign="top" height={50} align="center" iconType="circle" wrapperStyle={{ fontSize: '13px', fontWeight: 'bold', color: 'hsl(var(--foreground))' }} />
-                                            <Area yAxisId="left" type="monotone" dataKey="accuracy" name="Accuracy" stroke="#10b981" strokeWidth={4} fill="url(#modalColorAcc)" />
-                                            <Area yAxisId="right" type="monotone" dataKey="loss" name="Model Loss" stroke="#ef4444" strokeWidth={3} fill="url(#modalColorLoss)" strokeDasharray="8 8" />
-                                        </AreaChart>
+                                            <Line yAxisId="left" type="monotone" dataKey="accuracy" name="Accuracy" stroke="#10b981" strokeWidth={5} dot={{ r: 6, fill: "#10b981", strokeWidth: 3, stroke: "hsl(var(--background))" }} />
+                                            <Line yAxisId="right" type="monotone" dataKey="loss" name="Model Loss" stroke="#ef4444" strokeWidth={4} dot={{ r: 6, fill: "#ef4444", strokeWidth: 3, stroke: "hsl(var(--background))" }} strokeDasharray="8 8" />
+                                        </LineChart>
                                     ) : (
                                         <BarChart data={modelMetrics} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
                                             <defs>
@@ -1184,7 +1173,7 @@ function FLDashboard() {
                                                     <stop offset="100%" stopColor="#2563eb" stopOpacity={0.6} />
                                                 </linearGradient>
                                             </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#222" />
                                             <XAxis dataKey="round" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                                             <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                                             <Tooltip 
