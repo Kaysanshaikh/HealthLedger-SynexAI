@@ -757,10 +757,10 @@ function FLDashboard() {
                                                                             <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
                                                                         </linearGradient>
                                                                     </defs>
-                                                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                                                                     <XAxis 
                                                                         dataKey="round" 
-                                                                        stroke="#666" 
+                                                                        stroke="rgba(255,255,255,0.4)" 
                                                                         fontSize={11} 
                                                                         tickLine={false} 
                                                                         axisLine={false} 
@@ -769,7 +769,7 @@ function FLDashboard() {
                                                                     <YAxis
                                                                         yAxisId="left"
                                                                         domain={[0, 100]}
-                                                                        stroke="#666"
+                                                                        stroke="rgba(255,255,255,0.4)"
                                                                         fontSize={11}
                                                                         tickLine={false}
                                                                         axisLine={false}
@@ -778,7 +778,7 @@ function FLDashboard() {
                                                                     <YAxis
                                                                         yAxisId="right"
                                                                         orientation="right"
-                                                                        stroke="#666"
+                                                                        stroke="rgba(255,255,255,0.4)"
                                                                         fontSize={11}
                                                                         tickLine={false}
                                                                         axisLine={false}

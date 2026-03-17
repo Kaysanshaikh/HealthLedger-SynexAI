@@ -403,7 +403,7 @@ const FLManager = () => {
             {isParticipant && participantData && (
                 <div className="grid gap-4 md:grid-cols-2 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <Card className="border-primary/10 bg-primary/5 overflow-hidden relative group">
-                        <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                        <div className="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
                             <Zap className="h-32 w-32 text-primary" />
                         </div>
                         <CardHeader className="pb-2">
@@ -414,13 +414,13 @@ const FLManager = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="flex items-baseline gap-2">
-                                <div className="text-4xl font-black text-primary tracking-tighter">
+                                <div className="text-4xl font-black text-primary tracking-tighter drop-shadow-sm">
                                     {(parseFloat(participantData.total_rewards || participantData.totalRewards) || 0).toFixed(2)}
                                 </div>
-                                <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40">FL Credits</span>
+                                <span className="text-[10px] font-black text-muted-foreground uppercase opacity-70">FL Credits</span>
                             </div>
-                            <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono uppercase tracking-widest flex items-center gap-2">
-                                <span>Proof of Contribution Verified: {participantData.total_contributions || 0} Rounds</span>
+                            <p className="text-[10px] text-muted-foreground/80 mt-1 font-mono uppercase tracking-widest flex items-center gap-2">
+                                <span className="opacity-90">Proof of Contribution Verified: {participantData.total_contributions || 0} Rounds</span>
                                 {pendingContributions > 0 && (
                                     <span className="flex items-center gap-1 text-amber-500 font-bold animate-pulse">
                                         <RefreshCw className="h-2 w-2 animate-spin" />
@@ -432,31 +432,38 @@ const FLManager = () => {
                     </Card>
 
                     <Card className={`border ${reputationTier?.border} ${reputationTier?.bg} relative overflow-hidden group`}>
-                         <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                         <div className="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
                             <Shield className={`h-32 w-32 ${reputationTier?.color}`} />
                         </div>
                         <CardHeader className="pb-2">
                             <div className="flex items-center gap-2">
                                 <Shield className={`h-3.5 w-3.5 ${reputationTier?.color}`} />
-                                <CardTitle className={`text-[10px] font-bold uppercase tracking-[0.2em] ${reputationTier?.color} opacity-80`}>Network Reputation</CardTitle>
+                                <CardTitle className={`text-[10px] font-bold uppercase tracking-[0.2em] ${reputationTier?.color}`}>Network Reputation</CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className={`text-xl font-black ${reputationTier?.color} uppercase tracking-tight`}>
                                 {reputationTier?.name}
                             </div>
-                            <div className="flex items-center gap-3 mt-3">
-                                <div className="h-1.5 flex-1 bg-muted/30 rounded-full overflow-hidden border border-border/5">
+                            <div className="mt-4">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-80">
+                                        {reputationTier?.name === 'Gold Research Partner' 
+                                            ? 'Eminent Tier Status' 
+                                            : `Progress to Next Tier`}
+                                    </span>
+                                    <span className="text-[10px] font-mono font-bold text-muted-foreground opacity-90">
+                                        {reputationTier?.name === 'Gold Research Partner' 
+                                            ? 'MAX' 
+                                            : `${Math.max(0, (parseFloat(participantData.total_rewards || participantData.totalRewards) >= 100 ? 500 : 100) - (parseFloat(participantData.total_rewards || participantData.totalRewards) || 0)).toFixed(0)} pts left`}
+                                    </span>
+                                </div>
+                                <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden border border-border/10 backdrop-blur-sm">
                                     <div 
-                                        className={`h-full transition-all duration-1000 ${reputationTier?.color.replace('text-', 'bg-')}`} 
+                                        className={`h-full transition-all duration-1000 ease-in-out ${reputationTier?.color?.replace('text-', 'bg-')} shadow-[0_0_8px_rgba(0,0,0,0.2)]`} 
                                         style={{ width: `${Math.min(100, ((parseFloat(participantData.total_rewards || participantData.totalRewards) || 0) / (parseFloat(participantData.total_rewards || participantData.totalRewards) >= 100 ? 500 : 100)) * 100)}%` }} 
                                     />
                                 </div>
-                                <span className="text-[9px] font-bold text-muted-foreground/50 uppercase whitespace-nowrap">
-                                    {reputationTier?.name === 'Gold Research Partner' 
-                                        ? 'Eminent Tier' 
-                                        : `Next Tier: ${Math.max(0, (parseFloat(participantData.total_rewards || participantData.totalRewards) >= 100 ? 500 : 100) - (parseFloat(participantData.total_rewards || participantData.totalRewards) || 0)).toFixed(0)} pts`}
-                                </span>
                             </div>
                         </CardContent>
                     </Card>
