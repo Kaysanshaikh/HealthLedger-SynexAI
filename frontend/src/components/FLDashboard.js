@@ -737,7 +737,7 @@ function FLDashboard() {
                                                         <Button 
                                                             variant="ghost" 
                                                             size="icon" 
-                                                            className="h-8 w-8 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                                                            className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                                                             onClick={() => setMaximizedChart('learning')}
                                                         >
                                                             <Maximize2 className="h-4 w-4" />
@@ -784,8 +784,9 @@ function FLDashboard() {
                                                                         axisLine={false}
                                                                     />
                                                                     <Tooltip
-                                                                        contentStyle={{ backgroundColor: 'rgba(26, 26, 26, 0.95)', border: '1px solid #333', borderRadius: '12px', padding: '12px' }}
-                                                                        itemStyle={{ fontSize: '12px' }}
+                                                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', padding: '12px' }}
+                                                                        itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '12px' }}
+                                                                        labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
                                                                         formatter={(value, name) => [name === 'Accuracy' ? `${value.toFixed(2)}%` : value.toFixed(4), name]}
                                                                     />
                                                                     <Legend 
@@ -793,7 +794,7 @@ function FLDashboard() {
                                                                         height={36} 
                                                                         align="right"
                                                                         iconType="circle"
-                                                                        wrapperStyle={{ paddingBottom: '20px', fontSize: '11px', fontWeight: 'bold' }} 
+                                                                        wrapperStyle={{ paddingBottom: '20px', fontSize: '11px', fontWeight: 'bold', color: 'hsl(var(--foreground))' }} 
                                                                     />
                                                                     <Area
                                                                         yAxisId="left"
@@ -840,7 +841,7 @@ function FLDashboard() {
                                                         <Button 
                                                             variant="ghost" 
                                                             size="icon" 
-                                                            className="h-8 w-8 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                                                            className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                                                             onClick={() => setMaximizedChart('participation')}
                                                         >
                                                             <Maximize2 className="h-4 w-4" />
@@ -854,10 +855,10 @@ function FLDashboard() {
                                                                     <XAxis dataKey="round" stroke="#666" fontSize={11} tickLine={false} axisLine={false} />
                                                                     <YAxis stroke="#666" fontSize={11} tickLine={false} axisLine={false} />
                                                                     <Tooltip
-                                                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                                                        contentStyle={{ backgroundColor: 'rgba(26, 26, 26, 0.95)', border: '1px solid #333', borderRadius: '12px' }}
-                                                                        itemStyle={{ color: '#fff', fontSize: '12px' }}
-                                                                        labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '4px' }}
+                                                                        cursor={{ fill: 'rgba(128,128,128,0.1)' }}
+                                                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px' }}
+                                                                        itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '12px' }}
+                                                                        labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold', marginBottom: '4px' }}
                                                                     />
                                                                     <Bar
                                                                         dataKey="participants"
@@ -922,7 +923,7 @@ function FLDashboard() {
                                                         { label: 'F1-Score', key: 'f1', desc: 'Harmonized Index', color: 'text-purple-500' }
                                                     ].map((m) => {
                                                         const latest = modelMetrics.length > 0 ? modelMetrics[modelMetrics.length - 1] : null;
-                                                        const value = (latest && latest[m.key] !== undefined) ? `${(latest[m.key] * 100).toFixed(1)}%` : '—';
+                                                        const value = (latest && latest[m.key] !== undefined) ? `${Number(latest[m.key]).toFixed(1)}%` : '—';
                                                         return (
                                                             <Card key={m.label} className="p-4 bg-muted/10 border-border/30 rounded-xl">
                                                                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-1">{m.label}</p>
@@ -1029,8 +1030,8 @@ function FLDashboard() {
                                                                 <ResponsiveContainer width="100%" height="100%">
                                                                     <BarChart data={modelMetrics.map(m => ({
                                                                         name: m.round,
-                                                                        p: (m.precision || 0) * 100,
-                                                                        r: (m.recall || 0) * 100
+                                                                        p: m.precision || 0,
+                                                                        r: m.recall || 0
                                                                     }))} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                                                                         <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
                                                                         <Bar dataKey="p" fill="#3b82f6" radius={[2, 2, 0, 0]} name="Precision" />
@@ -1133,12 +1134,12 @@ function FLDashboard() {
                         <CardHeader className="flex flex-row items-center justify-between border-b border-border/10 px-8 py-6">
                             <div>
                                 <CardTitle className="text-2xl font-black tracking-tight">
-                                    {maximizedChart === 'learning' ? 'Advanced Learning Curve' : 'Network Dynamics'}
+                                    {maximizedChart === 'learning' ? 'Learning Curve' : 'Network Participation'}
                                 </CardTitle>
                                 <CardDescription className="text-sm">
                                     {maximizedChart === 'learning' 
-                                        ? `Performance convergence for ${selectedEvaluationDisease} federated model` 
-                                        : 'Institutional collaboration and node activity mapping'}
+                                        ? 'Accuracy and Loss trends across rounds' 
+                                        : 'Collaborative growth and engagement'}
                                 </CardDescription>
                             </div>
                             <Button variant="ghost" size="icon" onClick={() => setMaximizedChart(null)} className="rounded-full hover:bg-muted">
@@ -1165,23 +1166,34 @@ function FLDashboard() {
                                             <YAxis yAxisId="left" domain={[0, 100]} stroke="#666" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
                                             <YAxis yAxisId="right" orientation="right" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                                             <Tooltip 
-                                                contentStyle={{ backgroundColor: 'rgba(10, 10, 10, 0.95)', border: '1px solid #333', borderRadius: '16px', padding: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+                                                cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px', padding: '20px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2)' }}
+                                                itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '14px' }}
+                                                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold', marginBottom: '8px' }}
                                                 formatter={(v, n) => [n === 'Accuracy' ? `${v.toFixed(2)}%` : v.toFixed(5), n]}
                                             />
-                                            <Legend verticalAlign="top" height={50} align="center" iconType="circle" wrapperStyle={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }} />
+                                            <Legend verticalAlign="top" height={50} align="center" iconType="circle" wrapperStyle={{ fontSize: '13px', fontWeight: 'bold', color: 'hsl(var(--foreground))' }} />
                                             <Area yAxisId="left" type="monotone" dataKey="accuracy" name="Accuracy" stroke="#10b981" strokeWidth={4} fill="url(#modalColorAcc)" />
                                             <Area yAxisId="right" type="monotone" dataKey="loss" name="Model Loss" stroke="#ef4444" strokeWidth={3} fill="url(#modalColorLoss)" strokeDasharray="8 8" />
                                         </AreaChart>
                                     ) : (
                                         <BarChart data={modelMetrics} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id="modalBarGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
+                                                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0.6} />
+                                                </linearGradient>
+                                            </defs>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
                                             <XAxis dataKey="round" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                                             <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                                             <Tooltip 
-                                                cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                                                contentStyle={{ backgroundColor: 'rgba(10, 10, 10, 0.95)', border: '1px solid #333', borderRadius: '16px', padding: '20px' }}
+                                                cursor={{ fill: 'rgba(128,128,128,0.1)' }}
+                                                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px', padding: '20px' }}
+                                                itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '14px' }}
+                                                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold', marginBottom: '8px' }}
                                             />
-                                            <Bar dataKey="participants" fill="url(#barGradient)" name="Verified Node Count" radius={[12, 12, 0, 0]} barSize={60} />
+                                            <Bar dataKey="participants" fill="url(#modalBarGradient)" name="Verified Node Count" radius={[12, 12, 0, 0]} barSize={60} />
                                         </BarChart>
                                     )}
                                 </ResponsiveContainer>
