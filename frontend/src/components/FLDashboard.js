@@ -125,6 +125,28 @@ function FLDashboard() {
         }
     };
 
+    const modelInsights = useMemo(() => {
+        if (!modelMetrics.length) return { fidelity: 'Syncing...', convergence: 'Analyzing...' };
+        
+        const latest = modelMetrics[modelMetrics.length - 1];
+        const previous = modelMetrics.length > 1 ? modelMetrics[modelMetrics.length - 2] : null;
+
+        // Fidelity based on accuracy
+        let fidelity = 'Clinical Grade';
+        if (latest.accuracy < 85) fidelity = 'Research Grade';
+        if (latest.accuracy < 70) fidelity = 'Draft Node';
+
+        // Convergence based on loss trend
+        let convergence = 'Stable Growth';
+        if (previous) {
+            const lossDiff = latest.loss - previous.loss;
+            if (lossDiff > 0.05) convergence = 'Unstable (Diverging)';
+            else if (Math.abs(lossDiff) < 0.001) convergence = 'Converged';
+        }
+
+        return { fidelity, convergence };
+    }, [modelMetrics]);
+
     useEffect(() => {
         if (selectedModelForMetrics) {
             fetchModelMetrics(selectedModelForMetrics);
@@ -804,8 +826,8 @@ function FLDashboard() {
                                                                         name="Accuracy"
                                                                         stroke="#10b981"
                                                                         strokeWidth={4}
-                                                                        dot={{ r: 4, fill: "#10b981", strokeWidth: 2, stroke: "hsl(var(--background))" }}
-                                                                        activeDot={{ r: 6, strokeWidth: 0 }}
+                                                                        dot={{ r: 5, fill: "#10b981", strokeWidth: 0 }}
+                                                                        activeDot={{ r: 7, strokeWidth: 0 }}
                                                                     />
                                                                     <Line
                                                                         yAxisId="right"
@@ -814,7 +836,7 @@ function FLDashboard() {
                                                                         name="Model Loss"
                                                                         stroke="#ef4444"
                                                                         strokeWidth={3}
-                                                                        dot={{ r: 4, fill: "#ef4444", strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                                                                        dot={{ r: 5, fill: "#ef4444", strokeWidth: 0 }}
                                                                         strokeDasharray="5 5"
                                                                     />
                                                                 </LineChart>
@@ -1085,9 +1107,9 @@ function FLDashboard() {
 
                                 <footer className="mt-8 pt-6 border-t border-border/50 text-center">
                                     <div className="flex items-center justify-center gap-6 text-[10px] text-muted-foreground font-mono uppercase tracking-[0.2em]">
-                                        <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" /> ZK-Verified</span>
-                                        <span className="flex items-center gap-1.5"><RefreshCw className="h-3 w-3" /> Real-time Nodes</span>
-                                        <span className="flex items-center gap-1.5"><BarChart2 className="h-3 w-3" /> High Integrity</span>
+                                        <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" /> {modelInsights.fidelity}</span>
+                                        <span className="flex items-center gap-1.5"><RefreshCw className="h-3 w-3" /> {modelInsights.convergence}</span>
+                                        <span className="flex items-center gap-1.5"><BarChart2 className="h-3 w-3" /> ZK-Verified Integrity</span>
                                     </div>
                                 </footer>
                             </div>
@@ -1162,8 +1184,8 @@ function FLDashboard() {
                                                 formatter={(v, n) => [n === 'Accuracy' ? `${v.toFixed(2)}%` : v.toFixed(5), n]}
                                             />
                                             <Legend verticalAlign="top" height={50} align="center" iconType="circle" wrapperStyle={{ fontSize: '13px', fontWeight: 'bold', color: 'hsl(var(--foreground))' }} />
-                                            <Line yAxisId="left" type="monotone" dataKey="accuracy" name="Accuracy" stroke="#10b981" strokeWidth={5} dot={{ r: 6, fill: "#10b981", strokeWidth: 3, stroke: "hsl(var(--background))" }} />
-                                            <Line yAxisId="right" type="monotone" dataKey="loss" name="Model Loss" stroke="#ef4444" strokeWidth={4} dot={{ r: 6, fill: "#ef4444", strokeWidth: 3, stroke: "hsl(var(--background))" }} strokeDasharray="8 8" />
+                                            <Line yAxisId="left" type="monotone" dataKey="accuracy" name="Accuracy" stroke="#10b981" strokeWidth={5} dot={{ r: 6, fill: "#10b981", strokeWidth: 0 }} />
+                                            <Line yAxisId="right" type="monotone" dataKey="loss" name="Model Loss" stroke="#ef4444" strokeWidth={4} dot={{ r: 6, fill: "#ef4444", strokeWidth: 0 }} strokeDasharray="8 8" />
                                         </LineChart>
                                     ) : (
                                         <BarChart data={modelMetrics} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
@@ -1192,11 +1214,11 @@ function FLDashboard() {
                             <div className="flex gap-8">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Model Fidelity</span>
-                                    <span className="text-sm font-bold text-emerald-500">Clinical Grade</span>
+                                    <span className="text-sm font-bold text-emerald-500">{modelInsights.fidelity}</span>
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Convergence Status</span>
-                                    <span className="text-sm font-bold text-blue-500">Stable Growth</span>
+                                    <span className="text-sm font-bold text-blue-500">{modelInsights.convergence}</span>
                                 </div>
                             </div>
                             <p className="text-xs text-muted-foreground italic max-w-sm text-right">
