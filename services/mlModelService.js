@@ -71,7 +71,7 @@ async function trainLocalModel(disease, options = {}) {
 
         // Prepare custom data from medical records if needed
         let customData = null;
-        if (dataSource === 'medical_records' || dataSource === 'combined') {
+        if (dataSource === 'medical_records') {
             try {
                 const extracted = hhNumber 
                     ? await featureExtractor.extractFeaturesForPatient(disease, hhNumber)
@@ -86,13 +86,10 @@ async function trainLocalModel(disease, options = {}) {
                     console.log(`📊 Extracted ${extracted.features.length} feature vectors from medical records`);
                 } else {
                     console.warn(`⚠️ No medical record features available for ${disease}`);
-                    if (dataSource === 'medical_records') {
-                        throw new Error(`No medical record data available for ${disease}. Please submit diagnostic reports with health metrics first.`);
-                    }
+                    throw new Error(`No medical record data available for ${disease}. Please submit diagnostic reports with health metrics first.`);
                 }
             } catch (extractErr) {
-                if (dataSource === 'medical_records') throw extractErr;
-                console.warn(`⚠️ Medical record extraction failed, falling back to Kaggle only:`, extractErr.message);
+                throw extractErr;
             }
         }
 

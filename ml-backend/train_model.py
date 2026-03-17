@@ -98,46 +98,25 @@ def train(input_data):
     
     try:
         # Load data based on source type
-        if data_source in ("kaggle", "combined"):
+        if data_source == "kaggle":
             try:
                 X_kaggle, y_kaggle = load_dataset(disease, data_path=datasets_path, sample_count=sample_count)
                 X_all = X_kaggle
                 y_all = y_kaggle
                 logger.info(f"✅ Kaggle dataset loaded. Samples: {len(X_kaggle)}")
             except FileNotFoundError as e:
-                if data_source == "kaggle":
-                    return {"error": f"Dataset file missing for {disease}. Please upload real Kaggle data to ml-backend/datasets/"}
-                logger.warning(f"⚠️ Kaggle dataset not found, using medical records only: {e}")
+                return {"error": f"Dataset file missing for {disease}. Please upload real Kaggle data to ml-backend/datasets/"}
         
-        if data_source in ("medical_records", "combined") and custom_data:
+        elif data_source == "medical_records" and custom_data:
             features = custom_data.get("features", [])
             labels = custom_data.get("labels", [])
             if len(features) > 0:
                 if not labels or len(labels) != len(features):
                     return {"error": f"CRITICAL: Medical records lack corresponding diagnosis labels. Cannot train supervised ML model."}
                 
-                X_custom = np.array(features)
-                y_custom = np.array(labels)
-                
-                if X_all is not None and y_all is not None:
-                    # Combined mode: merge kaggle + medical records
-                    # Ensure same number of features by padding/truncating
-                    n_features = X_all.shape[1]
-                    if X_custom.shape[1] < n_features:
-                        # Pad custom data with zeros
-                        padding = np.zeros((len(X_custom), n_features - X_custom.shape[1]))
-                        X_custom = np.hstack([X_custom, padding])
-                    elif X_custom.shape[1] > n_features:
-                        # Truncate custom data
-                        X_custom = X_custom[:, :n_features]
-                    
-                    X_all = np.vstack([X_all, X_custom])
-                    y_all = np.concatenate([y_all, y_custom])
-                    logger.info(f"✅ Combined {len(X_kaggle)} Kaggle + {len(X_custom)} medical records = {len(X_all)} total")
-                else:
-                    X_all = X_custom
-                    y_all = y_custom
-                    logger.info(f"✅ Medical records loaded. Samples: {len(X_custom)}")
+                X_all = np.array(features)
+                y_all = np.array(labels)
+                logger.info(f"✅ Medical records loaded. Samples: {len(X_all)}")
         
         if X_all is None or len(X_all) == 0:
             return {"error": f"No training data available for {disease}. Check dataset files or medical records."}

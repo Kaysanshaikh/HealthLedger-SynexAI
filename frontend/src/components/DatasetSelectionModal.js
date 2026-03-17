@@ -10,7 +10,6 @@ const API_URL = '/fl';
 const DATA_SOURCE_OPTIONS = [
     { id: 'kaggle', label: 'Kaggle Datasets', icon: Database, description: 'Pre-curated research datasets' },
     { id: 'medical_records', label: 'Medical Records', icon: FileText, description: 'My medical record history' },
-    { id: 'combined', label: 'Combined', icon: Zap, description: 'Merge both sources' },
 ];
 
 const TRAINING_STEPS = ['Checking data', 'Loading libraries', 'Loading dataset', 'Training', 'Complete'];
@@ -293,7 +292,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                         <div className="grid grid-cols-3 gap-3">
                                             {DATA_SOURCE_OPTIONS.map(opt => {
                                                 const Icon = opt.icon;
-                                                const isPatientSource = opt.id === 'medical_records' || opt.id === 'combined';
+                                                const isPatientSource = opt.id === 'medical_records';
                                                 
                                                 // Disable if no data exists globally for institutions, 
                                                 // or if this specific patient is not trainable
@@ -352,7 +351,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                     {/* Dataset Details */}
                                     <div className="grid grid-cols-2 gap-4">
                                         {/* Kaggle Info */}
-                                        <Card className={`${dataSource === 'kaggle' || dataSource === 'combined' ? 'border-primary/30' : ''}`}>
+                                        <Card className={`${dataSource === 'kaggle' ? 'border-primary/30' : ''}`}>
                                             <CardHeader className="py-3 px-4">
                                                 <CardTitle className="text-sm flex items-center gap-1.5">
                                                     <Database className="h-3.5 w-3.5" /> Kaggle Dataset
@@ -373,7 +372,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                         </Card>
 
                                         {/* Medical Records Info */}
-                                        <Card className={`${dataSource === 'medical_records' || dataSource === 'combined' ? 'border-primary/30' : ''}`}>
+                                        <Card className={`${dataSource === 'medical_records' ? 'border-primary/30' : ''}`}>
                                             <CardHeader className="py-3 px-4">
                                                 <CardTitle className="text-sm flex items-center gap-1.5">
                                                     <FileText className="h-3.5 w-3.5" /> Medical Records
@@ -398,7 +397,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                     </div>
 
                                     {/* Sample Count Slider */}
-                                    {(dataSource === 'kaggle' || dataSource === 'combined') && kaggle && (
+                                    {dataSource === 'kaggle' && kaggle && (
                                         <div>
                                             <div className="flex items-center justify-between mb-2">
                                                 <p className="text-sm font-semibold">Sample Count</p>
