@@ -328,7 +328,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                                     </div>
 
                                     {/* Trainability Feedback for Patients */}
-                                    {user?.role === 'patient' && (dataSource === 'medical_records' || dataSource === 'combined') && (
+                                    {user?.role === 'patient' && dataSource === 'medical_records' && (
                                         <div className={`p-4 rounded-xl border text-sm flex gap-3 ${trainability.isTrainable ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
                                             {trainability.loading ? (
                                                 <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
