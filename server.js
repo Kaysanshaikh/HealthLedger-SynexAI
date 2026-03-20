@@ -50,7 +50,7 @@ if (process.env.NODE_ENV === "production" || process.env.RENDER) {
 }
 
 const port = process.env.PORT || 5001;
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`🚀 HealthLedger SynexAI API Gateway running on port ${port}`);
   if (process.env.NODE_ENV === "production") {
     console.log(`🌐 Application Hub: http://localhost:${port}`);
