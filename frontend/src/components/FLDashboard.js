@@ -1164,7 +1164,9 @@ function FLDashboard() {
                         <CardHeader className="flex flex-row items-center justify-between border-b border-border/10 px-8 py-6">
                             <div>
                                 <CardTitle className="text-2xl font-black tracking-tight">
-                                    {maximizedChart === 'learning' ? 'Learning Curve' : 'Network Participation'}
+                                    {maximizedChart === 'learning' ? 'Learning Curve' : 
+                                     maximizedChart === 'participation' ? 'Network Participation' : 
+                                     'Model Evaluation'}
                                 </CardTitle>
                                 <CardDescription className="text-sm">
                                     {maximizedChart === 'learning' 
@@ -1180,8 +1182,8 @@ function FLDashboard() {
                         </CardHeader>
                         <CardContent className="flex-1 p-8 overflow-hidden">
                             <div className="h-full w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    {maximizedChart === 'learning' ? (
+                                {maximizedChart === 'learning' ? (
+                                    <ResponsiveContainer width="100%" height="100%">
                                         <LineChart data={modelMetrics} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#222" />
                                             <XAxis dataKey="round" stroke="#666" fontSize={12} tickLine={false} axisLine={false} tickMargin={10} />
@@ -1198,7 +1200,9 @@ function FLDashboard() {
                                             <Line yAxisId="left" type="monotone" dataKey="accuracy" name="Accuracy" stroke="#10b981" strokeWidth={5} dot={{ r: 6, fill: "#10b981", strokeWidth: 0 }} />
                                             <Line yAxisId="right" type="monotone" dataKey="loss" name="Model Loss" stroke="#ef4444" strokeWidth={4} dot={{ r: 6, fill: "#ef4444", strokeWidth: 0 }} strokeDasharray="8 8" />
                                         </LineChart>
-                                    ) : maximizedChart === 'participation' ? (
+                                    </ResponsiveContainer>
+                                ) : maximizedChart === 'participation' ? (
+                                    <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={modelMetrics} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
                                             <defs>
                                                 <linearGradient id="modalBarGradient" x1="0" y1="0" x2="0" y2="1">
@@ -1217,8 +1221,9 @@ function FLDashboard() {
                                             />
                                             <Bar dataKey="participants" fill="url(#modalBarGradient)" name="Verified Node Count" radius={[12, 12, 0, 0]} barSize={60} />
                                         </BarChart>
-                                    ) : (
-                                        <div className="h-full overflow-y-auto pr-4 space-y-8 animate-in fade-in duration-500">
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="h-full overflow-y-auto pr-4 space-y-8 animate-in fade-in duration-500">
                                             {/* Metric Cards Grid */}
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                                 {[
@@ -1341,9 +1346,8 @@ function FLDashboard() {
                                                     Individual node contributions remain private, while the global performance is verified via ZK-SNARK protocols.
                                                 </p>
                                             </div>
-                                        </div>
-                                    )}
-                                </ResponsiveContainer>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                         <div className="px-8 py-6 border-t border-border/10 bg-muted/5 flex items-center justify-between">

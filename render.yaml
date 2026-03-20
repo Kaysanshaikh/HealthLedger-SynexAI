@@ -5,6 +5,7 @@ services:
     plan: free # Change to starter if you need more memory for training
     buildCommand: npm run build
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
