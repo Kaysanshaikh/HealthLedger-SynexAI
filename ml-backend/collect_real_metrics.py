@@ -3,9 +3,14 @@ import os
 import sys
 
 # Ensure local modules are findable
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from train_model import train
+try:
+    from train_model import train
+except ImportError:
+    # Fallback for different execution contexts
+    import train_model
+    train = train_model.train
 
 def collect():
     diseases = ['diabetes', 'cvd', 'cancer', 'pneumonia']
