@@ -944,6 +944,36 @@ function FLDashboard() {
                                                     </Alert>
                                                 )}
 
+                                                {selectedEvaluationDisease === 'cvd' && (
+                                                    <Alert className="bg-red-500/10 border-red-500/30 text-red-500 py-3 rounded-xl border-dashed">
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        <AlertTitle className="text-[10px] font-bold uppercase tracking-[0.1em] mb-1">Cardiac Risk Warning</AlertTitle>
+                                                        <AlertDescription className="text-xs opacity-90 leading-relaxed">
+                                                            Detection of high-variance systolic patterns. Patients with comorbid hypertension should be prioritized for follow-up cardiovascular screening.
+                                                        </AlertDescription>
+                                                    </Alert>
+                                                )}
+
+                                                {selectedEvaluationDisease === 'cancer' && (
+                                                    <Alert className="bg-purple-500/10 border-purple-500/30 text-purple-500 py-3 rounded-xl border-dashed">
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        <AlertTitle className="text-[10px] font-bold uppercase tracking-[0.1em] mb-1">Oncology Screening Alert</AlertTitle>
+                                                        <AlertDescription className="text-xs opacity-90 leading-relaxed">
+                                                            Model identifies aggressive feature convergence in malignant samples. Precision-optimized thresholds are active to minimize false positives.
+                                                        </AlertDescription>
+                                                    </Alert>
+                                                )}
+
+                                                {selectedEvaluationDisease === 'pneumonia' && (
+                                                    <Alert className="bg-blue-500/10 border-blue-500/30 text-blue-500 py-3 rounded-xl border-dashed">
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        <AlertTitle className="text-[10px] font-bold uppercase tracking-[0.1em] mb-1">Diagnostic Alert</AlertTitle>
+                                                        <AlertDescription className="text-xs opacity-90 leading-relaxed">
+                                                            Model identifies significant correlation between opacity clusters and bacterial markers. Higher resolution imaging recommended for borderline cases.
+                                                        </AlertDescription>
+                                                    </Alert>
+                                                )}
+
                                                 {/* Metric Cards */}
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                     {[
@@ -1092,6 +1122,7 @@ function FLDashboard() {
                                                                 {selectedEvaluationDisease === 'diabetes' && "The diabetes model demonstrates high recall, ensuring minimal false negatives in early detection. This is critical for preventative care in high-risk Pima Indian populations."}
                                                                 {selectedEvaluationDisease === 'cvd' && "Cardiovascular evaluation shows balanced precision and recall. The integration of 13 risk factors allows for stable classification across diverse demographic cohorts."}
                                                                 {selectedEvaluationDisease === 'cancer' && "Cancer screening metrics prioritize precision to avoid over-diagnosis. The current federated round indicates strong convergence on malignant feature identification."}
+                                                                {selectedEvaluationDisease === 'pneumonia' && "The pneumonia model focuses on detecting lung opacities and consolidation patterns. High recall is prioritized to ensure early identification of potential respiratory infections."}
                                                             </p>
                                                         </div>
                                                     </div>
