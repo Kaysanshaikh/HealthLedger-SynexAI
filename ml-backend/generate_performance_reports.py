@@ -3,6 +3,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import os
+import json
 
 # Set aesthetic style
 sns.set_theme(style="whitegrid")
@@ -17,41 +18,74 @@ if not os.path.exists(OUTPUT_DIR):
 def generate_all_metrics_chart():
     print("📊 Generating all_metrics.png...")
     
-    # Data for all diseases
-    data = {
-        'Disease': ['Diabetes', 'Diabetes', 'Diabetes', 'Diabetes',
-                    'CVD', 'CVD', 'CVD', 'CVD',
-                    'Cancer', 'Cancer', 'Cancer', 'Cancer',
-                    'Pneumonia', 'Pneumonia', 'Pneumonia', 'Pneumonia'],
-        'Metric': ['Accuracy', 'Precision', 'Recall', 'F1-Score'] * 4,
-        'Value': [
-            92.4, 89.5, 94.2, 91.8,  # Diabetes
-            88.7, 87.2, 89.1, 88.1,  # CVD
-            95.1, 98.2, 91.5, 94.7,  # Cancer
-            93.8, 91.2, 95.6, 93.3   # Pneumonia (New)
-        ]
+    METRICS_JSON = os.path.join(os.path.dirname(__file__), "..", "model performance", "real_metrics.json")
+    
+    # Default/Fallback Data
+    data_dict = {
+        'diabetes': {'accuracy': 71.4, 'precision': 61.0, 'recall': 58.0, 'f1': 59.0, 'samples': 768},
+        'cvd': {'accuracy': 80.3, 'precision': 79.0, 'recall': 85.0, 'f1': 81.0, 'samples': 303},
+        'cancer': {'accuracy': 96.5, 'precision': 98.0, 'recall': 93.0, 'f1': 95.0, 'samples': 569},
+        'pneumonia': {'accuracy': 93.8, 'precision': 91.5, 'recall': 96.2, 'f1': 93.8, 'samples': 5856}
     }
     
-    df = pd.DataFrame(data)
+    # Try to load real metrics
+    if os.path.exists(METRICS_JSON):
+        try:
+            with open(METRICS_JSON, 'r') as f:
+                data_dict = json.load(f)
+            print("✅ Successfully loaded real metrics from JSON")
+        except Exception as e:
+            print(f"⚠️ Could not load real metrics JSON: {e}. Using fallbacks.")
     
-    plt.figure(figsize=(12, 7))
+    # Prepare data for Seaborn
+    plot_data = {
+        'Disease': [],
+        'Metric': [],
+        'Value': []
+    }
+    
+    samples_labels = {}
+    
+    for disease, metrics in data_dict.items():
+        name = disease.capitalize() if disease != 'cvd' else 'CVD'
+        plot_data['Disease'].extend([name] * 4)
+        plot_data['Metric'].extend(['Accuracy', 'Precision', 'Recall', 'F1-Score'])
+        plot_data['Value'].extend([
+            metrics.get('accuracy', 0),
+            metrics.get('precision', 0),
+            metrics.get('recall', 0),
+            metrics.get('f1', 0)
+        ])
+        samples_labels[name] = metrics.get('samples', 0)
+    
+    df = pd.DataFrame(plot_data)
+    
+    plt.figure(figsize=(14, 8))
     ax = sns.barplot(x='Disease', y='Value', hue='Metric', data=df, palette='viridis')
     
-    plt.title('Global Model Performance Comparison (Aggregate)', fontsize=16, fontweight='bold', pad=20)
-    plt.ylabel('Percentage (%)', fontsize=12)
-    plt.xlabel('Medical Case Type', fontsize=12)
-    plt.ylim(80, 100)
+    plt.title('Global Model Performance Comparison (Aggregate)', fontsize=18, fontweight='bold', pad=25)
+    plt.ylabel('Percentage (%) / Score (x100)', fontsize=14)
+    plt.xlabel('Medical Research Track', fontsize=14)
+    plt.ylim(0, 110) # Set to 0-110 to show full range
     
     # Add value labels
     for p in ax.patches:
-        ax.annotate(f'{p.get_height():.1f}%', 
-                       (p.get_x() + p.get_width() / 2., p.get_height()), 
-                       ha = 'center', va = 'center', 
-                       xytext = (0, 9), 
-                       textcoords = 'offset points',
-                       fontsize=9, fontweight='bold')
+        height = p.get_height()
+        if height > 0:
+            ax.annotate(f'{height:.1f}', 
+                           (p.get_x() + p.get_width() / 2., height), 
+                           ha = 'center', va = 'center', 
+                           xytext = (0, 9), 
+                           textcoords = 'offset points',
+                           fontsize=9, fontweight='bold')
 
-    plt.legend(title='Metrics', bbox_to_anchor=(1.05, 1), loc='upper left')
+    # Annotate sample counts
+    for i, disease in enumerate(df['Disease'].unique()):
+        count = samples_labels.get(disease, 0)
+        plt.text(i, 5, f'Samples: {count:,}', ha='center', fontsize=11, fontweight='bold', 
+                 bbox=dict(facecolor='white', alpha=0.9, edgecolor='gray', boxstyle='round,pad=0.5'))
+
+    plt.legend(title='Metrics', bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0.)
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, "all_metrics.png"), dpi=300)
     print(f"✅ Saved to {os.path.join(OUTPUT_DIR, 'all_metrics.png')}")
