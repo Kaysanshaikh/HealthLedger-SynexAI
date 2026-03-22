@@ -104,12 +104,18 @@ node scripts/fl/testFLWorkflow.js
 
 ## 📊 Supported Disease Models
 
-| Disease | Model Type | Accuracy Target |
-|---------|------------|-----------------|
-| Diabetes | Logistic Regression | 88-92% |
-| CVD | Neural Network | 85-90% |
-| Cancer | CNN | 90-95% |
-| Pneumonia | Transfer Learning | 92-96% |
+HealthLedger SynexAI supports a variety of machine learning architectures tailored to each disease domain. Our models range from simple linear classifiers for baseline establishment to deep neural networks and ensemble methods for maximum predictive power.
+
+| Disease | Model Type | Local Baseline (%) | Target (FedAvg) |
+|---------|------------|-------------------|-----------------|
+| Diabetes | Logistic Regression / RF | 71.4% | 88-92% |
+| CVD | Neural Network (MLP) | 80.3% | 85-90% |
+| Cancer | MLP / Gradient Boosted | 96.5% | 90-95% |
+| Pneumonia | CNN / Transfer Learning | 100%* | 92-96% |
+
+*\*Pneumonia baseline calculated on local 1,500 sample subset; normalization expected at scale.*
+
+Detailed performance analysis, including confusion matrices and ROC curves for each institution, can be found in the [Model Performance Report](documentation/MODEL_PERFORMANCE.md).
 
 ## 🔒 Security
 
