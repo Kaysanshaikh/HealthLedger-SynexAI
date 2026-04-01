@@ -74,14 +74,17 @@ const UpdateProfile = () => {
     try {
       await client.put(`/profile/patient/${hhNumber}`, formData);
       setSuccess("Profile updated successfully!");
+      alert("✅ Profile updated successfully!");
 
-      // Redirect to profile view after 2 seconds
+      // Redirect to profile view After 1 second (faster now because of alert)
       setTimeout(() => {
         navigate(`/patient/${hhNumber}`);
-      }, 2000);
+      }, 1000);
     } catch (err) {
       console.error("Failed to update profile:", err);
-      setError(err.response?.data?.error || "Failed to update profile. Please try again.");
+      const msg = err.response?.data?.error || "Failed to update profile. Please try again.";
+      setError(msg);
+      alert("❌ Update Error:\n\n" + msg);
     } finally {
       setSaving(false);
     }

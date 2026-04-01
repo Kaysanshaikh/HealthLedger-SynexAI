@@ -7,6 +7,18 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const BurnerWalletManager = () => {
     const { burnerWallet, generateBurnerWallet, clearBurnerWallet } = useAuth();
+    
+    const handleGenerate = () => {
+        const wallet = generateBurnerWallet();
+        alert("🔥 Burner Wallet Generated!\n\nAddress: " + wallet.address + "\n\nAll actions will now use this local wallet until you clear it.");
+    };
+
+    const handleClear = () => {
+        if (window.confirm("Are you sure you want to clear the burner wallet? You will need to use MetaMask for future actions.")) {
+            clearBurnerWallet();
+            alert("🗑️ Burner Wallet cleared. MetaMask is now the default provider.");
+        }
+    };
 
     // If we wanted to hide this in production, we could check an env var here:
     if (process.env.REACT_APP_ENABLE_TEST_WALLETS !== 'true') return null;
@@ -38,7 +50,7 @@ const BurnerWalletManager = () => {
                     <div className="flex gap-2 w-full md:w-auto">
                         {!burnerWallet ? (
                             <Button
-                                onClick={generateBurnerWallet}
+                                onClick={handleGenerate}
                                 className="w-full md:w-auto bg-orange-600 hover:bg-orange-700 text-white"
                             >
                                 <Key className="mr-2 h-4 w-4" />
@@ -47,7 +59,7 @@ const BurnerWalletManager = () => {
                         ) : (
                             <Button
                                 variant="destructive"
-                                onClick={clearBurnerWallet}
+                                onClick={handleClear}
                                 className="w-full md:w-auto"
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />

@@ -136,7 +136,9 @@ function DiagnosticForm() {
     if (selectedFiles.length === 0) return;
 
     if (selectedFiles.length > 5) {
-      setError("You can upload a maximum of 5 files at once");
+      const msg = "You can upload a maximum of 5 files at once";
+      setError(msg);
+      alert("⚠️ " + msg);
       return;
     }
 
@@ -150,12 +152,16 @@ function DiagnosticForm() {
 
     for (const file of selectedFiles) {
       if (file.size > 1 * 1024 * 1024) {
-        setError(`File "${file.name}" exceeds 1MB limit`);
+        const msg = `File "${file.name}" exceeds 1MB limit`;
+        setError(msg);
+        alert("⚠️ " + msg);
         setFiles([]);
         return;
       }
       if (!allowedTypes.includes(file.type)) {
-        setError(`File "${file.name}" has invalid type. Only PDF, DOC, DOCX, JPG, and PNG are allowed.`);
+        const msg = `File "${file.name}" has invalid type. Only PDF, DOC, DOCX, JPG, and PNG are allowed.`;
+        setError(msg);
+        alert("⚠️ " + msg);
         setFiles([]);
         return;
       }
@@ -179,11 +185,15 @@ function DiagnosticForm() {
 
   const handleFileUpload = async () => {
     if (files.length === 0) {
-      setError("Please select at least one file to upload");
+      const msg = "Please select at least one file to upload";
+      setError(msg);
+      alert("⚠️ " + msg);
       return [];
     }
     if (!formData.patientHHNumber) {
-      setError("Please enter Patient HH Number before uploading files");
+      const msg = "Please enter Patient HH Number before uploading files";
+      setError(msg);
+      alert("⚠️ " + msg);
       return [];
     }
 
@@ -224,6 +234,7 @@ function DiagnosticForm() {
         errorMessage = "Cannot connect to server. Please make sure the backend server is running.";
       }
       setError(errorMessage);
+      alert("❌ Upload Error:\n\n" + errorMessage);
       return [];
     } finally {
       setUploading(false);
@@ -273,6 +284,7 @@ function DiagnosticForm() {
         successMsg += ` ${validMetrics.length} health metric(s) saved for ML training.`;
       }
       setSuccess(successMsg);
+      alert("✅ " + successMsg);
 
       // Reset form
       setFormData({ patientHHNumber: "", testName: "", testType: "", results: "", notes: "" });
@@ -283,7 +295,9 @@ function DiagnosticForm() {
       if (fileInput) fileInput.value = '';
 
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create diagnostic report. Please try again.");
+      const msg = err.response?.data?.error || "Failed to create diagnostic report. Please try again.";
+      setError(msg);
+      alert("❌ Submission Error:\n\n" + msg);
     } finally {
       setLoading(false);
     }

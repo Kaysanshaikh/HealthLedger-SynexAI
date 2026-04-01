@@ -31,7 +31,9 @@ const DoctorLogin = () => {
 
   const handleLogin = async () => {
     if (validationError || !hhNumber) {
-      setValidationError("Please enter a valid 6-digit HH Number.");
+      const msg = "Please enter a valid 6-digit HH Number.";
+      setValidationError(msg);
+      alert("⚠️ Validation Error:\n\n" + msg);
       return;
     }
     try {

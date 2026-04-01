@@ -52,6 +52,9 @@ const FLManager = () => {
 
     const showNotification = (type, title, message) => {
         setNotification({ type, title, message });
+        // Fulfilling user request: Every notification should also be a popup
+        const icon = type === 'error' ? '❌' : '✅';
+        alert(`${icon} ${title}\n\n${message}`);
     };
 
     const parseBlockchainError = (err) => {
@@ -171,8 +174,9 @@ const FLManager = () => {
             
             if (res.data.async) {
                 showNotification('success', '⏳ Processing', res.data.message || 'Transaction submitted to blockchain. It will appear shortly.');
+                // Note: showNotification already calls alert() now
                 
-                // Optimistic UI: Add a placeholder model
+                // Optimistic UI: Add a placeholder model... (logic continues)
                 const tempModel = {
                     model_id: `pending-${Date.now()}`,
                     disease: disease,

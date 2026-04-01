@@ -102,7 +102,9 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             const activeRound = activeRes.data.activeRound;
 
             if (!activeRound) {
-                setTrainingError('No active training round. Please initiate a round first.');
+                const msg = 'No active training round. Please initiate a round first.';
+                setTrainingError(msg);
+                alert("⚠️ Training Rejected:\n\n" + msg);
                 setTraining(false);
                 return;
             }
@@ -160,11 +162,15 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
 
             setTrainingResult(metrics);
             setProgress({ status: 'completed', progress: 100, step: 'Training complete' });
+            
+            alert(`✅ Training Complete!\n\nAccuracy: ${(metrics.accuracy * 100).toFixed(1)}%\nSamples: ${metrics.samplesTrained}\n\nYour contribution has been verified and submitted to the blockchain!`);
 
             if (onTrainingComplete) onTrainingComplete(metrics);
         } catch (err) {
             console.error('Training flow error:', err);
-            setTrainingError(err.response?.data?.error || err.message || 'Training failed');
+            const msg = err.response?.data?.error || err.message || 'Training failed';
+            setTrainingError(msg);
+            alert("❌ Training Failed:\n\n" + msg);
             setProgress({ status: 'failed', progress: 0, step: 'Training failed' });
         } finally {
             setTraining(false);

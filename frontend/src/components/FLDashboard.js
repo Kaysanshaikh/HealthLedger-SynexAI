@@ -36,6 +36,9 @@ function FLDashboard() {
 
     const showNotification = (type, title, message) => {
         setNotification({ type, title, message });
+        // Fulfilling user request: Every notification should also be a popup
+        const icon = type === 'error' ? '❌' : '✅';
+        alert(`${icon} ${title}\n\n${message}`);
     };
 
     const parseBlockchainError = (err) => {

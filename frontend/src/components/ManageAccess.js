@@ -49,13 +49,17 @@ const ManageAccess = () => {
     try {
       console.log("🔐 Granting access to doctor HH:", doctorHHNumber);
       await client.post(`/records/patient/${hhNumber}/grant`, { doctorHHNumber });
-      setSuccess(`Access granted successfully to Doctor (HH: ${doctorHHNumber})!`);
+      const msg = `✅ Access granted successfully to Doctor (HH: ${doctorHHNumber})!`;
+      setSuccess(msg);
+      alert(msg);
       setDoctorHHNumber("");
       setError("");
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to grant access:", err);
-      setError(err.response?.data?.error || "Failed to grant access. Please try again.");
+      const msg = err.response?.data?.error || "Failed to grant access. Please try again.";
+      setError(msg);
+      alert("❌ Grant Access Error:\n\n" + msg);
       setSuccess("");
     } finally {
       setLoading(false);
@@ -75,12 +79,16 @@ const ManageAccess = () => {
     try {
       console.log("🚫 Revoking access from doctor HH:", doctorHHNumber);
       await client.post(`/records/patient/${hhNumber}/revoke`, { doctorHHNumber });
-      setSuccess(`Access revoked successfully from Doctor (HH: ${doctorHHNumber})!`);
+      const msg = `✅ Access revoked successfully from Doctor (HH: ${doctorHHNumber})!`;
+      setSuccess(msg);
+      alert(msg);
       setDoctorHHNumber("");
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to revoke access:", err);
-      setError(err.response?.data?.error || "Failed to revoke access. Please try again.");
+      const msg = err.response?.data?.error || "Failed to revoke access. Please try again.";
+      setError(msg);
+      alert("❌ Revoke Access Error:\n\n" + msg);
     } finally {
       setLoading(false);
     }
@@ -94,11 +102,15 @@ const ManageAccess = () => {
     try {
       setError("");
       await client.post(`/records/patient/${hhNumber}/revoke`, { doctorHHNumber: doctorHH });
-      setSuccess(`Access revoked successfully from Doctor (HH: ${doctorHH})!`);
+      const msg = `✅ Access revoked successfully from Doctor (HH: ${doctorHH})!`;
+      setSuccess(msg);
+      alert(msg);
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to revoke access:", err);
-      setError(err.response?.data?.error || "Failed to revoke access. Please try again.");
+      const msg = err.response?.data?.error || "Failed to revoke access. Please try again.";
+      setError(msg);
+      alert("❌ Revoke Access Error:\n\n" + msg);
       setSuccess("");
     }
   };
@@ -107,11 +119,15 @@ const ManageAccess = () => {
     try {
       setError("");
       await client.post(`/records/patient/${hhNumber}/grant`, { doctorHHNumber: doctorHH });
-      setSuccess(`Access re-granted successfully to Doctor (HH: ${doctorHH})!`);
+      const msg = `✅ Access re-granted successfully to Doctor (HH: ${doctorHH})!`;
+      setSuccess(msg);
+      alert(msg);
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to grant access:", err);
-      setError(err.response?.data?.error || "Failed to grant access. Please try again.");
+      const msg = err.response?.data?.error || "Failed to grant access. Please try again.";
+      setError(msg);
+      alert("❌ Grant Access Error:\n\n" + msg);
       setSuccess("");
     }
   };
