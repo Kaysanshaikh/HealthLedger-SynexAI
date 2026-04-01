@@ -66,7 +66,7 @@ const PatientLogin = () => {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="hhNumber">HH Number (6-digit pin)</Label>
+              <Label htmlFor="hhNumber" className={validationError ? "text-destructive" : ""}>HH Number (6-digit pin)</Label>
               <Input
                 id="hhNumber"
                 name="hhNumber"
@@ -75,8 +75,13 @@ const PatientLogin = () => {
                 value={hhNumber}
                 onChange={handlehhNumberChange}
                 required
+                className={validationError ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {validationError && <p className="text-sm text-destructive mt-1">{validationError}</p>}
+              {validationError && (
+                <p className="text-xs font-medium text-destructive mt-1 animate-in fade-in slide-in-from-top-1">
+                  {validationError}
+                </p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">

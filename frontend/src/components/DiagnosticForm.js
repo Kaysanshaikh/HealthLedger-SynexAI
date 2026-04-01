@@ -94,6 +94,7 @@ function DiagnosticForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -138,6 +139,7 @@ function DiagnosticForm() {
     if (selectedFiles.length > 5) {
       const msg = "You can upload a maximum of 5 files at once";
       setError(msg);
+      setFieldErrors(prev => ({ ...prev, fileUpload: msg }));
       alert("⚠️ " + msg);
       return;
     }
@@ -154,6 +156,7 @@ function DiagnosticForm() {
       if (file.size > 1 * 1024 * 1024) {
         const msg = `File "${file.name}" exceeds 1MB limit`;
         setError(msg);
+        setFieldErrors(prev => ({ ...prev, fileUpload: msg }));
         alert("⚠️ " + msg);
         setFiles([]);
         return;
@@ -161,6 +164,7 @@ function DiagnosticForm() {
       if (!allowedTypes.includes(file.type)) {
         const msg = `File "${file.name}" has invalid type. Only PDF, DOC, DOCX, JPG, and PNG are allowed.`;
         setError(msg);
+        setFieldErrors(prev => ({ ...prev, fileUpload: msg }));
         alert("⚠️ " + msg);
         setFiles([]);
         return;
@@ -169,6 +173,7 @@ function DiagnosticForm() {
 
     setFiles(selectedFiles);
     setError("");
+    setFieldErrors(prev => ({ ...prev, fileUpload: null }));
     setUploadedFiles([]);
   };
 
@@ -246,6 +251,21 @@ function DiagnosticForm() {
     setLoading(true);
     setError("");
     setSuccess("");
+    const vErrors = {};
+    if (!formData.patientHHNumber) vErrors.patientHHNumber = "Patient HH Number is required";
+    if (!formData.testName) vErrors.testName = "Test Name is required";
+    if (!formData.testType) vErrors.testType = "Test Category is required";
+    if (!formData.results) vErrors.results = "Test Results are required";
+
+    if (Object.keys(vErrors).length > 0) {
+      setFieldErrors(vErrors);
+      const msg = Object.values(vErrors).join(', ');
+      setError(msg);
+      alert("⚠️ Validation Error:\n\n" + msg);
+      setLoading(false);
+      return;
+    }
+    setFieldErrors({});
 
     try {
       let uploadResults = uploadedFiles;
@@ -347,53 +367,58 @@ function DiagnosticForm() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="patientHHNumber">Patient HH Number *</Label>
+                  <Label htmlFor="patientHHNumber" className={fieldErrors.patientHHNumber ? "text-destructive" : ""}>Patient HH Number *</Label>
                   <Input
                     id="patientHHNumber"
                     name="patientHHNumber"
                     type="text"
                     placeholder="123456"
                     value={formData.patientHHNumber}
-                    onChange={handleChange}
+                    onChange={(e) => { handleChange(e); setFieldErrors(prev => ({ ...prev, patientHHNumber: null })); }}
+                    className={fieldErrors.patientHHNumber ? "border-destructive focus-visible:ring-destructive" : ""}
                     required
                   />
+                  {fieldErrors.patientHHNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.patientHHNumber}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="testName">Test Name *</Label>
+                  <Label htmlFor="testName" className={fieldErrors.testName ? "text-destructive" : ""}>Test Name *</Label>
                   <Input
                     id="testName"
                     name="testName"
                     type="text"
                     placeholder="Blood Test, X-Ray, etc."
                     value={formData.testName}
-                    onChange={handleChange}
+                    onChange={(e) => { handleChange(e); setFieldErrors(prev => ({ ...prev, testName: null })); }}
+                    className={fieldErrors.testName ? "border-destructive focus-visible:ring-destructive" : ""}
                     required
                   />
+                  {fieldErrors.testName && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.testName}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="testType">Test Category *</Label>
+                  <Label htmlFor="testType" className={fieldErrors.testType ? "text-destructive" : ""}>Test Category *</Label>
                   <select
                     id="testType"
                     name="testType"
                     value={formData.testType}
-                    onChange={handleChange}
+                    onChange={(e) => { handleChange(e); setFieldErrors(prev => ({ ...prev, testType: null })); }}
                     required
-                    className="w-full p-2 border rounded-md bg-background text-sm"
+                    className={`w-full p-2 border rounded-md bg-background text-sm ${fieldErrors.testType ? "border-destructive ring-destructive" : ""}`}
                   >
                     <option value="">Select test category...</option>
                     {TEST_TYPE_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
+                  {fieldErrors.testType && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.testType}</p>}
                   <p className="text-xs text-muted-foreground">
                     This categorization helps match records to relevant ML models for privacy-preserving research.
                   </p>
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="fileUpload">Upload Report Files (Optional)</Label>
+                  <Label htmlFor="fileUpload" className={fieldErrors.fileUpload ? "text-destructive" : ""}>Upload Report Files (Optional)</Label>
                   <div className="space-y-2">
                     <Input
                       id="fileUpload"
@@ -402,7 +427,9 @@ function DiagnosticForm() {
                       onChange={handleFileChange}
                       disabled={uploading || loading}
                       multiple
+                      className={fieldErrors.fileUpload ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
+                    {fieldErrors.fileUpload && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.fileUpload}</p>}
                     <p className="text-xs text-muted-foreground">
                       Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 1MB each, up to 5 files)
                     </p>
@@ -453,16 +480,18 @@ function DiagnosticForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="results">Test Results *</Label>
+                <Label htmlFor="results" className={fieldErrors.results ? "text-destructive" : ""}>Test Results *</Label>
                 <Textarea
                   id="results"
                   name="results"
                   placeholder="Enter detailed test results..."
                   value={formData.results}
-                  onChange={handleChange}
+                  onChange={(e) => { handleChange(e); setFieldErrors(prev => ({ ...prev, results: null })); }}
                   rows={4}
                   required
+                  className={fieldErrors.results ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {fieldErrors.results && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.results}</p>}
               </div>
 
               {/* Structured Health Metrics Section for ML Training */}

@@ -18,6 +18,7 @@ const UpdateProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState("");
   const [profileData, setProfileData] = useState(null);
   const [formData, setFormData] = useState({
@@ -63,6 +64,30 @@ const UpdateProfile = () => {
     });
     setError("");
     setSuccess("");
+    setFieldErrors(prev => ({ ...prev, [e.target.name]: null }));
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    const phonePattern = /^\+?[1-9]\d{1,14}$/;
+
+    if (formData.phoneNumber && !phonePattern.test(formData.phoneNumber.replace(/[\s-]/g, ''))) {
+      errors.phoneNumber = "Please enter a valid phone number";
+    }
+
+    if (formData.emergencyContactPhone && !phonePattern.test(formData.emergencyContactPhone.replace(/[\s-]/g, ''))) {
+      errors.emergencyContactPhone = "Please enter a valid emergency contact phone number";
+    }
+
+    if (!formData.homeAddress.trim()) {
+      errors.homeAddress = "Home address is required";
+    }
+
+    if (!formData.emergencyContactName.trim()) {
+      errors.emergencyContactName = "Emergency contact name is required";
+    }
+
+    return errors;
   };
 
   const handleSubmit = async (e) => {
@@ -70,6 +95,17 @@ const UpdateProfile = () => {
     setSaving(true);
     setError("");
     setSuccess("");
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      const msg = Object.values(validationErrors).join(', ');
+      setError(msg);
+      alert("⚠️ Validation Error:\n\n" + msg);
+      setSaving(false);
+      return;
+    }
+    setFieldErrors({});
 
     try {
       await client.put(`/profile/patient/${hhNumber}`, formData);
@@ -172,19 +208,21 @@ const UpdateProfile = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <Label htmlFor="phoneNumber" className={fieldErrors.phoneNumber ? "text-destructive" : ""}>Phone Number</Label>
                   <Input
                     id="phoneNumber"
                     name="phoneNumber"
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={handleChange}
-                    placeholder="+1234567890"
+                    placeholder="+91 98765 43210"
+                    className={fieldErrors.phoneNumber ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {fieldErrors.phoneNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.phoneNumber}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
+                  <Label htmlFor="emergencyContactName" className={fieldErrors.emergencyContactName ? "text-destructive" : ""}>Emergency Contact Name</Label>
                   <Input
                     id="emergencyContactName"
                     name="emergencyContactName"
@@ -192,26 +230,30 @@ const UpdateProfile = () => {
                     value={formData.emergencyContactName}
                     onChange={handleChange}
                     placeholder="Emergency contact person"
+                    className={fieldErrors.emergencyContactName ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {fieldErrors.emergencyContactName && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.emergencyContactName}</p>}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
+                  <Label htmlFor="emergencyContactPhone" className={fieldErrors.emergencyContactPhone ? "text-destructive" : ""}>Emergency Contact Phone</Label>
                   <Input
                     id="emergencyContactPhone"
                     name="emergencyContactPhone"
                     type="tel"
                     value={formData.emergencyContactPhone}
                     onChange={handleChange}
-                    placeholder="+1234567890"
+                    placeholder="+91 98765 43210"
+                    className={fieldErrors.emergencyContactPhone ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {fieldErrors.emergencyContactPhone && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.emergencyContactPhone}</p>}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="homeAddress">Home Address</Label>
+                <Label htmlFor="homeAddress" className={fieldErrors.homeAddress ? "text-destructive" : ""}>Home Address</Label>
                 <Textarea
                   id="homeAddress"
                   name="homeAddress"
@@ -219,7 +261,9 @@ const UpdateProfile = () => {
                   onChange={handleChange}
                   placeholder="Enter your complete home address"
                   rows="3"
+                  className={fieldErrors.homeAddress ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {fieldErrors.homeAddress && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.homeAddress}</p>}
               </div>
 
               <div className="space-y-2">

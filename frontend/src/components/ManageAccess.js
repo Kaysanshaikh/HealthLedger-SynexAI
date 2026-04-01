@@ -16,6 +16,7 @@ const ManageAccess = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [grantedDoctors, setGrantedDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
 
@@ -38,9 +39,12 @@ const ManageAccess = () => {
 
   const handleGrantAccess = async () => {
     if (!doctorHHNumber) {
-      setError("Please enter the doctor's HH Number");
+      const msg = "Please enter the doctor's HH Number";
+      setError(msg);
+      setFieldErrors({ doctorHHNumber: msg });
       return;
     }
+    setFieldErrors({});
 
     setLoading(true);
     setError("");
@@ -68,9 +72,12 @@ const ManageAccess = () => {
 
   const handleRevokeAccess = async () => {
     if (!doctorHHNumber) {
-      setError("Please enter the doctor's HH Number");
+      const msg = "Please enter the doctor's HH Number";
+      setError(msg);
+      setFieldErrors({ doctorHHNumber: msg });
       return;
     }
+    setFieldErrors({});
 
     setLoading(true);
     setError("");
@@ -250,14 +257,20 @@ const ManageAccess = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="doctorHHNumber">Doctor's Health Hero Number</Label>
+              <Label htmlFor="doctorHHNumber" className={fieldErrors.doctorHHNumber ? "text-destructive" : ""}>Doctor's Health Hero Number</Label>
               <Input
                 id="doctorHHNumber"
                 type="number"
                 placeholder="e.g., 666666"
                 value={doctorHHNumber}
-                onChange={(e) => setDoctorHHNumber(e.target.value)}
+                onChange={(e) => { setDoctorHHNumber(e.target.value); setFieldErrors({}); }}
+                className={fieldErrors.doctorHHNumber ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              {fieldErrors.doctorHHNumber && (
+                <p className="text-[10px] font-medium text-destructive mt-1">
+                  {fieldErrors.doctorHHNumber}
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">
                 Enter the HH Number of the doctor you want to grant or revoke access to
               </p>

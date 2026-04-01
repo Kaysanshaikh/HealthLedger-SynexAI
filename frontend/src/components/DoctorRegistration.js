@@ -52,6 +52,7 @@ const DoctorRegistry = () => {
     yearsOfExperience: ""
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   // Get wallet address on component mount
@@ -72,55 +73,55 @@ const DoctorRegistry = () => {
   };
 
   const validateForm = () => {
-    const errors = [];
+    const errors = {};
 
     // Name validation
     if (!formData.name.trim()) {
-      errors.push("Full name is required");
+      errors.name = "Full name is required";
     } else if (formData.name.trim().length < 2) {
-      errors.push("Full name must be at least 2 characters");
+      errors.name = "Full name must be at least 2 characters";
     } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
-      errors.push("Full name can only contain letters and spaces");
+      errors.name = "Full name can only contain letters and spaces";
     }
 
     // Email validation
     if (!formData.email.trim()) {
-      errors.push("Email is required");
+      errors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.push("Please enter a valid email address");
+      errors.email = "Please enter a valid email address";
     }
 
     // Phone number validation (International format with country codes)
     if (!formData.phoneNumber.trim()) {
-      errors.push("Phone number is required");
+      errors.phoneNumber = "Phone number is required";
     } else if (!isValidPhoneNumber(formData.phoneNumber)) {
-      errors.push("Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901, +44 7123456789)");
+      errors.phoneNumber = "Please enter a valid phone number with country code";
     }
 
     // HH Number validation
     if (!formData.hhNumber.trim()) {
-      errors.push("HH Number is required");
+      errors.hhNumber = "HH Number is required";
     } else if (!/^\d{6}$/.test(formData.hhNumber)) {
-      errors.push("HH Number must be exactly 6 digits");
+      errors.hhNumber = "HH Number must be exactly 6 digits";
     }
 
     // License number validation
     if (!formData.licenseNumber.trim()) {
-      errors.push("Medical license number is required");
+      errors.licenseNumber = "Medical license number is required";
     } else if (formData.licenseNumber.trim().length < 5) {
-      errors.push("License number must be at least 5 characters");
+      errors.licenseNumber = "License number must be at least 5 characters";
     }
 
     // Years of experience validation
     if (!formData.yearsOfExperience.trim()) {
-      errors.push("Years of experience is required");
+      errors.yearsOfExperience = "Years of experience is required";
     } else if (!/^\d+$/.test(formData.yearsOfExperience) || parseInt(formData.yearsOfExperience) < 0 || parseInt(formData.yearsOfExperience) > 60) {
-      errors.push("Years of experience must be a valid number between 0 and 60");
+      errors.yearsOfExperience = "Years of experience must be between 0 and 60";
     }
 
     // Required field validation
-    if (!formData.specialization.trim()) errors.push("Specialization is required");
-    if (!formData.hospital.trim()) errors.push("Hospital/Clinic name is required");
+    if (!formData.specialization.trim()) errors.specialization = "Specialization is required";
+    if (!formData.hospital.trim()) errors.hospital = "Hospital/Clinic name is required";
 
     return errors;
   };
@@ -132,13 +133,15 @@ const DoctorRegistry = () => {
 
     // Client-side validation
     const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      const msg = validationErrors.join(', ');
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      const msg = Object.values(validationErrors).join(', ');
       setError(msg);
       alert("⚠️ Validation Error:\n\n" + msg);
       setLoading(false);
       return;
     }
+    setFieldErrors({});
 
     console.log("Submitting doctor registration:", formData);
 
@@ -200,23 +203,39 @@ const DoctorRegistry = () => {
             )}
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
-                <Input id="name" name="name" type="text" placeholder="Dr. John Doe" required onChange={handleChange} />
+                <Label htmlFor="name" className={fieldErrors.name ? "text-destructive" : ""}>Full Name *</Label>
+                <Input 
+                  id="name" name="name" type="text" placeholder="Dr. John Doe" required onChange={handleChange} 
+                  className={fieldErrors.name ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.name && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.name}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="specialization">Specialization *</Label>
-                <Input id="specialization" name="specialization" type="text" placeholder="Cardiology" required onChange={handleChange} />
+                <Label htmlFor="specialization" className={fieldErrors.specialization ? "text-destructive" : ""}>Specialization *</Label>
+                <Input 
+                  id="specialization" name="specialization" type="text" placeholder="Cardiology" required onChange={handleChange} 
+                  className={fieldErrors.specialization ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.specialization && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.specialization}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="hospital">Hospital/Clinic *</Label>
-                <Input id="hospital" name="hospital" type="text" placeholder="General Hospital" required onChange={handleChange} />
+                <Label htmlFor="hospital" className={fieldErrors.hospital ? "text-destructive" : ""}>Hospital/Clinic *</Label>
+                <Input 
+                  id="hospital" name="hospital" type="text" placeholder="General Hospital" required onChange={handleChange} 
+                  className={fieldErrors.hospital ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.hospital && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.hospital}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input id="email" name="email" type="email" placeholder="dr.smith@healthledgersynexai.com" required onChange={handleChange} />
+                <Label htmlFor="email" className={fieldErrors.email ? "text-destructive" : ""}>Email *</Label>
+                <Input 
+                  id="email" name="email" type="email" placeholder="dr.smith@healthledgersynexai.com" required onChange={handleChange} 
+                  className={fieldErrors.email ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.email && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.email}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="hhNumber">HH Number (6-digit) *</Label>
+                <Label htmlFor="hhNumber" className={fieldErrors.hhNumber ? "text-destructive" : ""}>HH Number (6-digit) *</Label>
                 <div className="flex space-x-2">
                   <Input 
                     id="hhNumber" 
@@ -226,28 +245,37 @@ const DoctorRegistry = () => {
                     required 
                     value={formData.hhNumber}
                     onChange={handleChange} 
-                    pattern="[0-9]{6}" 
-                    maxLength="6" 
-                    minLength="6" 
-                    title="Please enter exactly 6 digits" 
-                    className="flex-1"
+                    className={`flex-1 ${fieldErrors.hhNumber ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                   <Button type="button" variant="outline" onClick={handleSuggestHH}>
                     Suggest
                   </Button>
                 </div>
+                {fieldErrors.hhNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.hhNumber}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number *</Label>
-                <Input id="phoneNumber" name="phoneNumber" type="tel" placeholder="+91 98765 43210" required onChange={handleChange} />
+                <Label htmlFor="phoneNumber" className={fieldErrors.phoneNumber ? "text-destructive" : ""}>Phone Number *</Label>
+                <Input 
+                  id="phoneNumber" name="phoneNumber" type="tel" placeholder="+91 98765 43210" required onChange={handleChange} 
+                  className={fieldErrors.phoneNumber ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.phoneNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.phoneNumber}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="licenseNumber">Medical License Number *</Label>
-                <Input id="licenseNumber" name="licenseNumber" type="text" placeholder="MCI-12345" required onChange={handleChange} />
+                <Label htmlFor="licenseNumber" className={fieldErrors.licenseNumber ? "text-destructive" : ""}>Medical License Number *</Label>
+                <Input 
+                  id="licenseNumber" name="licenseNumber" type="text" placeholder="MCI-12345" required onChange={handleChange} 
+                  className={fieldErrors.licenseNumber ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.licenseNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.licenseNumber}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="yearsOfExperience">Years of Experience *</Label>
-                <Input id="yearsOfExperience" name="yearsOfExperience" type="number" placeholder="5" min="0" max="70" required onChange={handleChange} />
+                <Label htmlFor="yearsOfExperience" className={fieldErrors.yearsOfExperience ? "text-destructive" : ""}>Years of Experience *</Label>
+                <Input 
+                  id="yearsOfExperience" name="yearsOfExperience" type="number" placeholder="5" min="0" max="70" required onChange={handleChange} 
+                  className={fieldErrors.yearsOfExperience ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.yearsOfExperience && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.yearsOfExperience}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="walletAddress">Wallet Address *</Label>

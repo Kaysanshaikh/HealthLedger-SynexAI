@@ -57,6 +57,7 @@ const PatientRegistry = () => {
     chronicConditions: ""
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   // Get wallet address on component mount
@@ -81,51 +82,51 @@ const PatientRegistry = () => {
   };
 
   const validateForm = () => {
-    const errors = [];
+    const errors = {};
 
     // Name validation
     if (!formData.name.trim()) {
-      errors.push("Full name is required");
+      errors.name = "Full name is required";
     } else if (formData.name.trim().length < 2) {
-      errors.push("Full name must be at least 2 characters");
+      errors.name = "Full name must be at least 2 characters";
     } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
-      errors.push("Full name can only contain letters and spaces");
+      errors.name = "Full name can only contain letters and spaces";
     }
 
     // Email validation
     if (!formData.email.trim()) {
-      errors.push("Email is required");
+      errors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.push("Please enter a valid email address");
+      errors.email = "Please enter a valid email address";
     }
 
     // Phone number validation (International format with country codes)
     if (!formData.phoneNumber.trim()) {
-      errors.push("Phone number is required");
+      errors.phoneNumber = "Phone number is required";
     } else if (!isValidPhoneNumber(formData.phoneNumber)) {
-      errors.push("Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901, +44 7123456789)");
+      errors.phoneNumber = "Please enter a valid phone number with country code";
     }
 
     // Emergency contact phone validation
     if (!formData.emergencyContactPhone.trim()) {
-      errors.push("Emergency contact phone is required");
+      errors.emergencyContactPhone = "Emergency contact phone is required";
     } else if (!isValidPhoneNumber(formData.emergencyContactPhone)) {
-      errors.push("Please enter a valid emergency contact phone number with country code");
+      errors.emergencyContactPhone = "Please enter a valid emergency contact phone number";
     }
 
     // HH Number validation
     if (!formData.hhNumber.trim()) {
-      errors.push("HH Number is required");
+      errors.hhNumber = "HH Number is required";
     } else if (!/^\d{6}$/.test(formData.hhNumber)) {
-      errors.push("HH Number must be exactly 6 digits");
+      errors.hhNumber = "HH Number must be exactly 6 digits";
     }
 
     // Required field validation
-    if (!formData.dob) errors.push("Date of birth is required");
-    if (!formData.gender) errors.push("Gender is required");
-    if (!formData.bloodGroup) errors.push("Blood group is required");
-    if (!formData.homeAddress.trim()) errors.push("Home address is required");
-    if (!formData.emergencyContactName.trim()) errors.push("Emergency contact name is required");
+    if (!formData.dob) errors.dob = "Date of birth is required";
+    if (!formData.gender) errors.gender = "Gender is required";
+    if (!formData.bloodGroup) errors.bloodGroup = "Blood group is required";
+    if (!formData.homeAddress.trim()) errors.homeAddress = "Home address is required";
+    if (!formData.emergencyContactName.trim()) errors.emergencyContactName = "Emergency contact name is required";
 
     return errors;
   };
@@ -137,13 +138,15 @@ const PatientRegistry = () => {
 
     // Client-side validation
     const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      const msg = validationErrors.join(', ');
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      const msg = Object.values(validationErrors).join(', ');
       setError(msg);
       alert("⚠️ Validation Error:\n\n" + msg);
       setLoading(false);
       return;
     }
+    setFieldErrors({});
 
     console.log("Submitting patient registration:", formData);
 
@@ -207,17 +210,25 @@ const PatientRegistry = () => {
             )}
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
-                <Input id="name" name="name" type="text" placeholder="John Doe" required onChange={handleChange} />
+                <Label htmlFor="name" className={fieldErrors.name ? "text-destructive" : ""}>Full Name *</Label>
+                <Input 
+                  id="name" name="name" type="text" placeholder="John Doe" required onChange={handleChange} 
+                  className={fieldErrors.name ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.name && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.name}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dob">Date of Birth *</Label>
-                <Input id="dob" name="dob" type="date" required onChange={handleChange} max={new Date().toISOString().split('T')[0]} />
+                <Label htmlFor="dob" className={fieldErrors.dob ? "text-destructive" : ""}>Date of Birth *</Label>
+                <Input 
+                  id="dob" name="dob" type="date" required onChange={handleChange} max={new Date().toISOString().split('T')[0]} 
+                  className={fieldErrors.dob ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.dob && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.dob}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender *</Label>
-                <Select name="gender" onValueChange={(value) => handleSelectChange("gender", value)}>
-                  <SelectTrigger>
+                <Label htmlFor="gender" className={fieldErrors.gender ? "text-destructive" : ""}>Gender *</Label>
+                <Select name="gender" onValueChange={(value) => { handleSelectChange("gender", value); setFieldErrors(prev => ({ ...prev, gender: null })); }}>
+                  <SelectTrigger className={fieldErrors.gender ? "border-destructive focus-visible:ring-destructive" : ""}>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -226,11 +237,12 @@ const PatientRegistry = () => {
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+                {fieldErrors.gender && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.gender}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="bloodGroup">Blood Group *</Label>
-                <Select name="bloodGroup" onValueChange={(value) => handleSelectChange("bloodGroup", value)}>
-                  <SelectTrigger>
+                <Label htmlFor="bloodGroup" className={fieldErrors.bloodGroup ? "text-destructive" : ""}>Blood Group *</Label>
+                <Select name="bloodGroup" onValueChange={(value) => { handleSelectChange("bloodGroup", value); setFieldErrors(prev => ({ ...prev, bloodGroup: null })); }}>
+                  <SelectTrigger className={fieldErrors.bloodGroup ? "border-destructive focus-visible:ring-destructive" : ""}>
                     <SelectValue placeholder="Select blood group" />
                   </SelectTrigger>
                   <SelectContent>
@@ -244,17 +256,26 @@ const PatientRegistry = () => {
                     <SelectItem value="AB-">AB-</SelectItem>
                   </SelectContent>
                 </Select>
+                {fieldErrors.bloodGroup && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.bloodGroup}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="homeAddress">Home Address *</Label>
-                <Input id="homeAddress" name="homeAddress" type="text" placeholder="123 Main St, Anytown, USA" required onChange={handleChange} />
+                <Label htmlFor="homeAddress" className={fieldErrors.homeAddress ? "text-destructive" : ""}>Home Address *</Label>
+                <Input 
+                  id="homeAddress" name="homeAddress" type="text" placeholder="123 Main St, Anytown, USA" required onChange={handleChange} 
+                  className={fieldErrors.homeAddress ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.homeAddress && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.homeAddress}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input id="email" name="email" type="email" placeholder="patient@healthledgersynexai.com" required onChange={handleChange} />
+                <Label htmlFor="email" className={fieldErrors.email ? "text-destructive" : ""}>Email *</Label>
+                <Input 
+                  id="email" name="email" type="email" placeholder="patient@healthledgersynexai.com" required onChange={handleChange} 
+                  className={fieldErrors.email ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.email && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.email}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="hhNumber">HH Number (6-digit) *</Label>
+                <Label htmlFor="hhNumber" className={fieldErrors.hhNumber ? "text-destructive" : ""}>HH Number (6-digit) *</Label>
                 <div className="flex space-x-2">
                   <Input 
                     id="hhNumber" 
@@ -264,46 +285,47 @@ const PatientRegistry = () => {
                     required 
                     value={formData.hhNumber}
                     onChange={handleChange} 
-                    pattern="[0-9]{6}" 
-                    maxLength="6" 
-                    minLength="6" 
-                    title="Please enter exactly 6 digits" 
-                    className="flex-1"
+                    className={`flex-1 ${fieldErrors.hhNumber ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                   <Button type="button" variant="outline" onClick={handleSuggestHH}>
                     Suggest
                   </Button>
                 </div>
+                {fieldErrors.hhNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.hhNumber}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number *</Label>
+                <Label htmlFor="phoneNumber" className={fieldErrors.phoneNumber ? "text-destructive" : ""}>Phone Number *</Label>
                 <Input
                   id="phoneNumber"
                   name="phoneNumber"
                   type="tel"
-                  placeholder="+91 9876543210 or +1 2345678901"
+                  placeholder="+91 9876543210"
                   required
                   onChange={handleChange}
-                  pattern="^\+[1-9][\d\s\-]{7,15}$"
-                  title="Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901)"
+                  className={fieldErrors.phoneNumber ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {fieldErrors.phoneNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.phoneNumber}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emergencyContactName">Emergency Contact Name *</Label>
-                <Input id="emergencyContactName" name="emergencyContactName" type="text" placeholder="Jane Doe" required onChange={handleChange} />
+                <Label htmlFor="emergencyContactName" className={fieldErrors.emergencyContactName ? "text-destructive" : ""}>Emergency Contact Name *</Label>
+                <Input 
+                  id="emergencyContactName" name="emergencyContactName" type="text" placeholder="Jane Doe" required onChange={handleChange} 
+                  className={fieldErrors.emergencyContactName ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.emergencyContactName && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.emergencyContactName}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="emergencyContactPhone">Emergency Contact Phone *</Label>
+                <Label htmlFor="emergencyContactPhone" className={fieldErrors.emergencyContactPhone ? "text-destructive" : ""}>Emergency Contact Phone *</Label>
                 <Input
                   id="emergencyContactPhone"
                   name="emergencyContactPhone"
                   type="tel"
-                  placeholder="+91 9876543210 or +1 2345678901"
+                  placeholder="+91 9876543210"
                   required
                   onChange={handleChange}
-                  pattern="^\+[1-9][\d\s\-]{7,15}$"
-                  title="Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901)"
+                  className={fieldErrors.emergencyContactPhone ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {fieldErrors.emergencyContactPhone && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.emergencyContactPhone}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="allergies">Allergies</Label>

@@ -51,6 +51,7 @@ const DiagnosticRegistry = () => {
     accreditation: ""
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   // Get wallet address on component mount
@@ -71,39 +72,40 @@ const DiagnosticRegistry = () => {
   };
 
   const validateForm = () => {
-    const errors = [];
+    const errors = {};
 
     // Name validation
     if (!formData.name.trim()) {
-      errors.push("Center name is required");
+      errors.name = "Center name is required";
     } else if (formData.name.trim().length < 2) {
-      errors.push("Center name must be at least 2 characters");
+      errors.name = "Center name must be at least 2 characters";
     }
 
     // Email validation
     if (!formData.email.trim()) {
-      errors.push("Email is required");
+      errors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.push("Please enter a valid email address");
+      errors.email = "Please enter a valid email address";
     }
 
     // Phone number validation (International format with country codes)
     if (!formData.phoneNumber.trim()) {
-      errors.push("Phone number is required");
+      errors.phoneNumber = "Phone number is required";
     } else if (!isValidPhoneNumber(formData.phoneNumber)) {
-      errors.push("Please enter a valid phone number with country code (e.g., +91 9876543210, +1 2345678901, +44 7123456789)");
+      errors.phoneNumber = "Please enter a valid phone number with country code";
     }
 
     // HH Number validation
     if (!formData.hhNumber.trim()) {
-      errors.push("HH Number is required");
+      errors.hhNumber = "HH Number is required";
     } else if (!/^\d{6}$/.test(formData.hhNumber)) {
-      errors.push("HH Number must be exactly 6 digits");
+      errors.hhNumber = "HH Number must be exactly 6 digits";
     }
 
     // Required field validation
-    if (!formData.location.trim()) errors.push("Location is required");
-    if (!formData.servicesOffered.trim()) errors.push("Services offered is required");
+    if (!formData.location.trim()) errors.location = "Location is required";
+    if (!formData.servicesOffered.trim()) errors.servicesOffered = "Services offered is required";
+    if (!formData.accreditation.trim()) errors.accreditation = "Accreditation/Certification is required";
 
     return errors;
   };
@@ -115,13 +117,15 @@ const DiagnosticRegistry = () => {
 
     // Client-side validation
     const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      const msg = validationErrors.join(', ');
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      const msg = Object.values(validationErrors).join(', ');
       setError(msg);
       alert("⚠️ Validation Error:\n\n" + msg);
       setLoading(false);
       return;
     }
+    setFieldErrors({});
 
     console.log("Submitting diagnostic registration:", formData);
 
@@ -175,19 +179,31 @@ const DiagnosticRegistry = () => {
             )}
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="name">Center Name *</Label>
-                <Input id="name" name="name" type="text" placeholder="City Diagnostics" required onChange={handleChange} />
+                <Label htmlFor="name" className={fieldErrors.name ? "text-destructive" : ""}>Center Name *</Label>
+                <Input 
+                  id="name" name="name" type="text" placeholder="City Diagnostics" required onChange={handleChange} 
+                  className={fieldErrors.name ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.name && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.name}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="location">Location *</Label>
-                <Input id="location" name="location" type="text" placeholder="Anytown, USA" required onChange={handleChange} />
+                <Label htmlFor="location" className={fieldErrors.location ? "text-destructive" : ""}>Location *</Label>
+                <Input 
+                  id="location" name="location" type="text" placeholder="Anytown, USA" required onChange={handleChange} 
+                  className={fieldErrors.location ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.location && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.location}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input id="email" name="email" type="email" placeholder="contact@healthledgersynexai.com" required onChange={handleChange} />
+                <Label htmlFor="email" className={fieldErrors.email ? "text-destructive" : ""}>Email *</Label>
+                <Input 
+                  id="email" name="email" type="email" placeholder="contact@healthledgersynexai.com" required onChange={handleChange} 
+                  className={fieldErrors.email ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.email && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.email}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="hhNumber">HH Number (6-digit) *</Label>
+                <Label htmlFor="hhNumber" className={fieldErrors.hhNumber ? "text-destructive" : ""}>HH Number (6-digit) *</Label>
                 <div className="flex space-x-2">
                   <Input 
                     id="hhNumber" 
@@ -197,28 +213,37 @@ const DiagnosticRegistry = () => {
                     required 
                     value={formData.hhNumber}
                     onChange={handleChange} 
-                    pattern="[0-9]{6}" 
-                    maxLength="6" 
-                    minLength="6" 
-                    title="Please enter exactly 6 digits" 
-                    className="flex-1"
+                    className={`flex-1 ${fieldErrors.hhNumber ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                   <Button type="button" variant="outline" onClick={handleSuggestHH}>
                     Suggest
                   </Button>
                 </div>
+                {fieldErrors.hhNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.hhNumber}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number *</Label>
-                <Input id="phoneNumber" name="phoneNumber" type="tel" placeholder="+91 98765 43210" required onChange={handleChange} />
+                <Label htmlFor="phoneNumber" className={fieldErrors.phoneNumber ? "text-destructive" : ""}>Phone Number *</Label>
+                <Input 
+                  id="phoneNumber" name="phoneNumber" type="tel" placeholder="+91 98765 43210" required onChange={handleChange} 
+                  className={fieldErrors.phoneNumber ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.phoneNumber && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.phoneNumber}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="servicesOffered">Services Offered *</Label>
-                <Input id="servicesOffered" name="servicesOffered" type="text" placeholder="X-Ray, MRI, Blood Tests, etc." required onChange={handleChange} />
+                <Label htmlFor="servicesOffered" className={fieldErrors.servicesOffered ? "text-destructive" : ""}>Services Offered *</Label>
+                <Input 
+                  id="servicesOffered" name="servicesOffered" type="text" placeholder="X-Ray, MRI, Blood Tests, etc." required onChange={handleChange} 
+                  className={fieldErrors.servicesOffered ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.servicesOffered && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.servicesOffered}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="accreditation">Accreditation/Certification *</Label>
-                <Input id="accreditation" name="accreditation" type="text" placeholder="NABL, ISO 9001:2015, etc." required onChange={handleChange} />
+                <Label htmlFor="accreditation" className={fieldErrors.accreditation ? "text-destructive" : ""}>Accreditation/Certification *</Label>
+                <Input 
+                  id="accreditation" name="accreditation" type="text" placeholder="NABL, ISO 9001:2015, etc." required onChange={handleChange} 
+                  className={fieldErrors.accreditation ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {fieldErrors.accreditation && <p className="text-[10px] font-medium text-destructive mt-1">{fieldErrors.accreditation}</p>}
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="walletAddress">Wallet Address *</Label>
