@@ -111,12 +111,13 @@ export const AuthProvider = ({ children }) => {
           "MetaMask connection timeout. Please unlock MetaMask and try again."
         );
 
-        if (!accounts || accounts.length === 0) {
-          throw new Error("No wallet accounts found. Please unlock MetaMask.");
+        if (!accounts || !Array.isArray(accounts) || accounts.length === 0 || !accounts[0]) {
+          console.error("❌ Invalid accounts array returned from MetaMask:", accounts);
+          throw new Error("No valid wallet accounts found. Please ensure your MetaMask is unlocked and you have selected an account.");
         }
 
         walletAddress = accounts[0];
-        console.log("✅ Wallet connected:", walletAddress);
+        console.log("✅ Wallet connected successfully:", walletAddress);
 
         // 2. Create message to sign
         message = `Welcome to HealthLedger SynexAI!\n\nSign this message to log in as a ${role}.\n\nWallet: ${walletAddress}`;
@@ -205,8 +206,9 @@ export const AuthProvider = ({ children }) => {
         window.ethereum.request({ method: "eth_requestAccounts" })
       );
 
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No wallet accounts found. Please unlock MetaMask.");
+      if (!accounts || !Array.isArray(accounts) || accounts.length === 0 || !accounts[0]) {
+        console.error("❌ Invalid accounts array returned from MetaMask (getWalletAddress):", accounts);
+        throw new Error("No valid wallet accounts found. Please unlock your MetaMask and ensure an account is selected.");
       }
 
       return accounts[0];
