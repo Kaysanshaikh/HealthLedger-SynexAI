@@ -69,6 +69,33 @@ export const AuthProvider = ({ children }) => {
       ]);
     };
 
+    // Centralized Crypto Error Handler
+    const getFriendlyErrorMessage = (err) => {
+      console.error("🔍 Decoding Web3 Error:", err);
+      
+      // Standardize error code detection
+      const code = err.code || (err.error && err.error.code);
+      const message = err.message || (err.error && err.error.message) || "";
+
+      if (code === -32002) {
+        return "🛡️ A MetaMask request is already pending. Please click the MetaMask extension icon to approve the connection!";
+      }
+      if (message.includes("User rejected") || message.includes("User denied")) {
+        return "❌ You rejected the connection request. Please try again and approve the request in MetaMask.";
+      }
+      if (message.includes("timeout")) {
+        return "⏰ MetaMask connection timeout. Please unlock your wallet and try again.";
+      }
+      if (message.includes("MetaMask is not installed")) {
+        return "🦊 MetaMask is not installed. Please install MetaMask extension to continue.";
+      }
+      if (message.includes("No valid wallet accounts")) {
+        return "🔑 No valid wallet account selected. Please unlock MetaMask and ensure an account is selected.";
+      }
+      
+      return err.response?.data?.error || message || "Unable to login. Please try again.";
+    };
+
     try {
       console.log("🔐 Starting login process...", { role, hhNumber });
 
@@ -105,11 +132,27 @@ export const AuthProvider = ({ children }) => {
 
         // 1. Get accounts with timeout
         console.log("📱 Requesting MetaMask accounts...");
-        const accounts = await timeout(
-          30000, // 30 second timeout
-          window.ethereum.request({ method: "eth_requestAccounts" }),
-          "MetaMask connection timeout. Please unlock MetaMask and try again."
-        );
+        let accounts;
+        try {
+          accounts = await timeout(
+            30000, // 30 second timeout
+            window.ethereum.request({ method: "eth_requestAccounts" }),
+            "MetaMask connection timeout. Please unlock MetaMask and try again."
+          );
+        } catch (requestErr) {
+          // If a request is already pending, we should handle it early
+          if (requestErr.code === -32002) {
+            const msg = "🛡️ A MetaMask request is already pending. Please click the fox icon in your browser to approve it!";
+            alert(msg);
+            throw new Error(msg);
+          }
+          throw requestErr;
+        }
+
+        // Handle cases where provider returns an object { result: null, error: ... } instead of throwing
+        if (accounts && accounts.error) {
+          throw accounts.error;
+        }
 
         if (!accounts || !Array.isArray(accounts) || accounts.length === 0 || !accounts[0]) {
           console.error("❌ Invalid accounts array returned from MetaMask:", accounts);
@@ -149,26 +192,12 @@ export const AuthProvider = ({ children }) => {
       setUser(apiUser);
       return { token: apiToken, user: apiUser };
     } catch (err) {
-      console.error("❌ Login error:", err);
-
-      // User-friendly error messages
-      let userMessage = "Unable to login. Please try again.";
-
-      if (err.message.includes("User rejected") || err.message.includes("User denied")) {
-        userMessage = "You rejected the connection request. Please try again and approve the request.";
-      } else if (err.message.includes("timeout")) {
-        userMessage = err.message;
-      } else if (err.message.includes("MetaMask is not installed")) {
-        userMessage = "MetaMask is not installed. Please install MetaMask extension to continue.";
-      } else if (err.message.includes("No wallet accounts")) {
-        userMessage = "Please unlock your MetaMask wallet and try again.";
-      } else if (err.response?.data?.error) {
-        userMessage = err.response.data.error;
-      } else if (err.message) {
-        userMessage = err.message;
-      }
+      const userMessage = getFriendlyErrorMessage(err);
+      console.error("❌ Login failed:", userMessage, err);
 
       setError(userMessage);
+      // Production grade check: Bring the error to the user's immediate attention via alert
+      alert(userMessage);
       throw new Error(userMessage);
     } finally {
       setLoading(false);
