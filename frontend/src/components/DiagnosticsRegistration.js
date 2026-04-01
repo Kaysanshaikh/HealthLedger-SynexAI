@@ -116,7 +116,9 @@ const DiagnosticRegistry = () => {
     // Client-side validation
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
-      setError(validationErrors.join(', '));
+      const msg = validationErrors.join(', ');
+      setError(msg);
+      alert("⚠️ Validation Error:\n\n" + msg);
       setLoading(false);
       return;
     }
@@ -126,12 +128,13 @@ const DiagnosticRegistry = () => {
     try {
       const response = await client.post("/register/diagnostic", formData);
       console.log("Registration successful:", response.data);
-      alert("Diagnostic Center registered successfully!");
+      alert("✅ Diagnostic Center registered successfully!");
       navigate("/login");
     } catch (err) {
       console.error("Registration error:", err);
       const errorMessage = err.response?.data?.error || err.message || "Failed to register diagnostic center";
       setError(errorMessage);
+      alert("❌ Registration Error:\n\n" + errorMessage);
     } finally {
       setLoading(false);
     }

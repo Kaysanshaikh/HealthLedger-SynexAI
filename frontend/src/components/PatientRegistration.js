@@ -138,7 +138,9 @@ const PatientRegistry = () => {
     // Client-side validation
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
-      setError(validationErrors.join(', '));
+      const msg = validationErrors.join(', ');
+      setError(msg);
+      alert("⚠️ Validation Error:\n\n" + msg);
       setLoading(false);
       return;
     }
@@ -148,20 +150,23 @@ const PatientRegistry = () => {
     try {
       const response = await client.post("/register/patient", formData);
       console.log("Registration successful:", response.data);
-      alert("Patient registered successfully!");
+      alert("✅ Patient registered successfully!");
       navigate("/login");
     } catch (err) {
       console.error("Registration error:", err);
 
       // Handle different error types
+      let errorMessage = "Registration failed. Please try again.";
       if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
         // Validation errors
-        setError(err.response.data.errors.join(', '));
+        errorMessage = err.response.data.errors.join(', ');
       } else {
         // User-friendly error message
-        const errorMessage = err.response?.data?.error || "Registration failed. Please try again.";
-        setError(errorMessage);
+        errorMessage = err.response?.data?.error || err.message || "Registration failed. Please try again.";
       }
+      
+      setError(errorMessage);
+      alert("❌ Registration Error:\n\n" + errorMessage);
     } finally {
       setLoading(false);
     }
