@@ -15,6 +15,12 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: "Missing required login fields" });
     }
 
+    // Validate HH number format (must be a 6-digit number)
+    const hhNumberInt = parseInt(hhNumber, 10);
+    if (isNaN(hhNumberInt) || String(hhNumberInt).length !== 6) {
+      return res.status(400).json({ error: "Invalid HH Number format. Must be a 6-digit number." });
+    }
+
     const recoveredAddress = ethers.verifyMessage(message, signature);
     if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
       return res.status(401).json({ error: "Invalid signature" });
@@ -80,6 +86,20 @@ exports.login = async (req, res) => {
         error: `No ${normalizedRole} account found for this wallet. Please register first.`
       });
     }
+
+    // ─── CRITICAL: Validate HH number matches the registered account ───────────
+    // Prevent users from logging in with an arbitrary HH number.
+    // The submitted hhNumber must exactly match what is stored in the database
+    // for this wallet+role combination.
+    if (normalizedRole !== 'admin' && parseInt(userRow.hh_number, 10) !== hhNumberInt) {
+      console.warn(
+        `⛔ HH Number mismatch for wallet ${walletAddress}: submitted=${hhNumberInt}, registered=${userRow.hh_number}`
+      );
+      return res.status(403).json({
+        error: `Incorrect HH Number for this wallet. Please enter the HH Number you registered with.`
+      });
+    }
+    // ────────────────────────────────────────────────────────────────────────────
 
     const user = {
       hhNumber: userRow.hh_number,

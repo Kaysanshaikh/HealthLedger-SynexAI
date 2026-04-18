@@ -47,9 +47,10 @@ const PatientLogin = () => {
     console.log("🚀 Patient login initiated for HH Number:", hhNumber);
 
     try {
-      await login({ role: "patient", hhNumber });
+      const result = await login({ role: "patient", hhNumber });
+      const confirmedHH = result?.user?.hhNumber || hhNumber;
       console.log("✅ Login successful, navigating to dashboard...");
-      navigate(`/patient/${hhNumber}`);
+      navigate(`/patient/${confirmedHH}`);
     } catch (err) {
       console.error("❌ Login failed:", err.message);
       // Error is handled by the useAuth hook

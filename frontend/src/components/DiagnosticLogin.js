@@ -44,8 +44,9 @@ const DiagnosticLogin = () => {
       return;
     }
     try {
-      await login({ role: "diagnostic", hhNumber });
-      navigate(`/diagnostic/${hhNumber}`);
+      const result = await login({ role: "diagnostic", hhNumber });
+      const confirmedHH = result?.user?.hhNumber || hhNumber;
+      navigate(`/diagnostic/${confirmedHH}`);
     } catch (err) {
       // Error is handled by the useAuth hook
     }
