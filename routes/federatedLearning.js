@@ -32,7 +32,7 @@ router.post("/models", authMiddleware, async (req, res) => {
         }
 
         const creatorWallet = req.user.walletAddress;
-        
+
         // Respond immediately to prevent Render timeout
         res.json({
             success: true,
@@ -275,9 +275,9 @@ router.post("/rounds/train", authMiddleware, async (req, res) => {
             return res.status(400).json({ error: "Model ID required" });
         }
 
-        // Get model details from DB to know the disease type and model type
+        // Get model details from DB: disease type, model type, and latest global model CID
         const modelResult = await db.query(
-            "SELECT disease, model_type FROM fl_models WHERE model_id = $1",
+            "SELECT disease, model_type, global_model_ipfs FROM fl_models WHERE model_id = $1",
             [modelId]
         );
 
@@ -287,30 +287,83 @@ router.post("/rounds/train", authMiddleware, async (req, res) => {
 
         const disease = modelResult.rows[0].disease;
         const modelType = modelResult.rows[0].model_type;
+        const globalModelCID = modelResult.rows[0].global_model_ipfs;
         const source = dataSource || 'kaggle';
         const limit = sampleCount || samples || null;
 
         console.log(`🧠 [ASYNC] Initiating local training for ${disease} model (${modelType})...`);
+        if (globalModelCID) {
+            console.log(`🔄 Global model CID found: ${globalModelCID} — warm-start will be used.`);
+        } else {
+            console.log(`🆕 No global model CID — Round 1 cold training.`);
+        }
 
-        // Start training in background (non-blocking)
-        // This prevents Render's HTTP request timeout (usually 30s)
-        mlModelService.trainLocalModel(disease, {
-            dataSource: source,
-            sampleCount: limit,
-            modelId,
-            modelType,
-            hhNumber: req.body.hhNumber || null
-        }).catch(err => {
-            console.error(`❌ Background training failed for ${modelId}:`, err);
-        });
-
-        // Respond immediately
+        // Respond immediately to prevent Render timeout
         res.json({
             success: true,
             async: true,
             status: 'started',
             message: "Training started in background. Please poll status endpoint for results."
         });
+
+        // Run training in background (non-blocking)
+        // Warm-start: download previous global model BEFORE calling trainLocalModel
+        // Uses retry with exponential backoff — Pinata rate limits / network blips are transient
+        (async () => {
+            let globalModel = null;
+            let warmStartMode = 'cold'; // tracked for status reporting
+
+            if (globalModelCID) {
+                const MAX_RETRIES = 3;
+                const BASE_DELAY_MS = 2000; // 2s → 4s → 8s
+
+                for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                    try {
+                        console.log(`🔄 Warm-start attempt ${attempt}/${MAX_RETRIES}: loading global model from IPFS (${globalModelCID})...`);
+                        const downloaded = await mlModelService.downloadModelFromIPFS(globalModelCID);
+                        globalModel = downloaded.modelWeights;
+                        warmStartMode = 'warm';
+                        console.log(`✅ Warm-start: global model loaded on attempt ${attempt} (${globalModelCID})`);
+                        break; // success — exit retry loop
+                    } catch (err) {
+                        const isLastAttempt = attempt === MAX_RETRIES;
+                        if (isLastAttempt) {
+                            // All retries exhausted — fall back to cold training
+                            // Model performance will be slightly degraded this round
+                            // but the system remains functional and the next round can recover
+                            console.error(
+                                `❌ Warm-start failed after ${MAX_RETRIES} attempts for model ${modelId}. ` +
+                                `Falling back to cold training. This round's contribution may slightly ` +
+                                `dilute the global model. Error: ${err.message}`
+                            );
+                            warmStartMode = 'cold_fallback';
+                        } else {
+                            const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+                            console.warn(
+                                `⚠️ Warm-start attempt ${attempt} failed: ${err.message}. ` +
+                                `Retrying in ${delay / 1000}s...`
+                            );
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                        }
+                    }
+                }
+            }
+
+            console.log(`🏋️ Training mode: ${warmStartMode === 'warm' ? '🔥 warm-start (continuing from global model)' : warmStartMode === 'cold_fallback' ? '🧊 cold (IPFS load failed after retries)' : '🆕 cold (Round 1)'}`);
+
+            try {
+                await mlModelService.trainLocalModel(disease, {
+                    dataSource: source,
+                    sampleCount: limit,
+                    modelId,
+                    modelType,
+                    globalModel,   // null on cold/cold_fallback, real weights on warm
+                    hhNumber: req.body.hhNumber || null
+                });
+            } catch (err) {
+                console.error(`❌ Background training failed for ${modelId}:`, err);
+            }
+        })();
 
     } catch (error) {
         console.error("Initiate training error:", error);
@@ -591,7 +644,7 @@ router.post("/rounds/aggregate", authMiddleware, async (req, res) => {
            end_time = CURRENT_TIMESTAMP
        WHERE round_id = $6`,
             [
-                aggregatedIPFS, 
+                aggregatedIPFS,
                 aggregatedModel.precision,
                 aggregatedModel.recall,
                 aggregatedModel.f1Score,
@@ -607,18 +660,21 @@ router.post("/rounds/aggregate", authMiddleware, async (req, res) => {
             await db.query(
                 `UPDATE fl_models 
                  SET accuracy = $1, loss = $2, precision = $3, recall = $4, f1_score = $5, auc = $6,
+                     global_model_ipfs = $7,
                      current_round = current_round + 1, updated_at = CURRENT_TIMESTAMP
-                 WHERE model_id = $7`,
+                 WHERE model_id = $8`,
                 [
-                    aggregatedModel.accuracy, 
+                    aggregatedModel.accuracy,
                     aggregatedModel.loss,
                     aggregatedModel.precision,
                     aggregatedModel.recall,
                     aggregatedModel.f1Score,
                     aggregatedModel.auc,
+                    aggregatedIPFS,
                     modelId
                 ]
             );
+            console.log(`✅ Warm-start: global_model_ipfs updated on fl_models (${aggregatedIPFS})`);
         }
 
         res.json({
@@ -719,12 +775,34 @@ router.post("/rounds/complete", authMiddleware, async (req, res) => {
 
         console.log(`📊 Completing round ${roundId} with ${round.currentParticipants} on-chain participant(s) (DB shows ${contributions.rows.length})`);
 
-        // Calculate average accuracy and loss from contributions
-        const avgAccuracy = contributions.rows.reduce((sum, c) => sum + parseFloat(c.local_accuracy), 0) / contributions.rows.length;
-        const avgLoss = contributions.rows.reduce((sum, c) => sum + parseFloat(c.local_loss), 0) / contributions.rows.length;
-
-        // Aggregate models
-        const aggregatedModelIPFS = `aggregated_round_${roundId}_${Date.now()}`;
+        // Build and upload a real aggregated model to IPFS
+        // Download all participant model weights and run FedAvg to get a proper global model
+        let aggregatedModelIPFS;
+        let realAggregatedModel = null;
+        try {
+            const modelUpdates = await Promise.all(
+                contributions.rows.map(async (c) => {
+                    const m = await mlModelService.downloadModelFromIPFS(c.model_update_ipfs);
+                    return {
+                        modelWeights: m.modelWeights,
+                        accuracy: parseFloat(c.local_accuracy),
+                        loss: parseFloat(c.local_loss),
+                        samplesTrained: parseInt(c.samples_trained) || 100
+                    };
+                })
+            );
+            realAggregatedModel = mlModelService.federatedAverage(modelUpdates);
+            aggregatedModelIPFS = await mlModelService.uploadModelToIPFS(
+                realAggregatedModel,
+                `round-${roundId}-aggregated`
+            );
+            console.log(`✅ Real aggregated model uploaded to IPFS: ${aggregatedModelIPFS}`);
+        } catch (ipfsAggErr) {
+            // Graceful fallback: if IPFS operations fail, use a placeholder string
+            // The round still completes — warm-start just won't apply next round
+            console.warn(`⚠️ Could not build/upload aggregated model: ${ipfsAggErr.message}. Using placeholder CID.`);
+            aggregatedModelIPFS = `aggregated_round_${roundId}_${Date.now()}`;
+        }
 
         try {
             // Note: This may fail if blockchain requires minParticipants (default 2)
@@ -765,15 +843,17 @@ router.post("/rounds/complete", authMiddleware, async (req, res) => {
             ['completed', aggregatedModelIPFS, roundId]
         );
 
-        // Update database: Model global metrics
+        // Update database: Model global metrics + persist global model CID for warm-start
         await db.query(
             `UPDATE fl_models 
              SET accuracy = $1, 
                  loss = $2, 
+                 global_model_ipfs = $3,
                  updated_at = CURRENT_TIMESTAMP 
-             WHERE LOWER(model_id) = LOWER($3)`,
-            [avgAccuracy, avgLoss, round.modelId]
+             WHERE LOWER(model_id) = LOWER($4)`,
+            [avgAccuracy, avgLoss, aggregatedModelIPFS, round.modelId]
         );
+        console.log(`✅ Warm-start: global_model_ipfs updated on fl_models (${aggregatedModelIPFS})`);
 
         // --- PHASE 1 REWARD INTEGRATION ---
         // Decoupled reward processing to ensure round completion succeeds
@@ -787,7 +867,7 @@ router.post("/rounds/complete", authMiddleware, async (req, res) => {
                     }
 
                     const rewardAmount = calculateReward(contribution.samples_trained, contribution.local_accuracy);
-                    
+
                     console.log(`💰 Calculated Reward for ${contribution.participant_address}: ${rewardAmount} units (${contribution.samples_trained} samples, ${contribution.local_accuracy} acc)`);
 
                     // 1. Log to database (Phase 1)
@@ -1067,7 +1147,7 @@ router.post("/rounds/recalculate-rewards", authMiddleware, async (req, res) => {
         const results = [];
         for (const c of contribs.rows) {
             const rewardAmount = calculateReward(c.samples_trained, c.local_accuracy);
-            
+
             // Check if already rewarded
             const existing = await db.query(
                 `SELECT * FROM fl_rewards WHERE contribution_id = $1`,

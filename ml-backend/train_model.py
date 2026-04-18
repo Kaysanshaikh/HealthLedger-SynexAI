@@ -79,6 +79,82 @@ def extract_weights(model, model_type):
         }
 
 
+def apply_warm_start(model, global_model, model_type, n_features):
+    """
+    Initialize a freshly created sklearn model with weights from the previous
+    global federated model so that training continues from the last round
+    rather than starting from scratch.
+
+    Gracefully falls back to cold training if:
+    - global_model is None / empty
+    - Stored weight shapes don't match the current dataset's feature count
+    - Any unexpected error occurs
+    """
+    if not global_model:
+        return model
+
+    try:
+        if model_type == 'logistic_regression':
+            coef = global_model.get('coef')
+            intercept = global_model.get('intercept')
+            if coef and intercept:
+                coef_arr = np.array(coef)
+                intercept_arr = np.array(intercept)
+                # Guard: only apply if feature dimensions match
+                if coef_arr.shape[-1] == n_features:
+                    model.set_params(warm_start=True)
+                    model.coef_ = coef_arr
+                    model.intercept_ = intercept_arr
+                    model.classes_ = np.array([0, 1])
+                    model.n_iter_ = np.array([0])
+                    logger.info(f"✅ Warm-start applied: LogisticRegression (shape: {coef_arr.shape})")
+                else:
+                    logger.warning(
+                        f"⚠️ Warm-start skipped: stored coef shape {coef_arr.shape} vs "
+                        f"current n_features={n_features}. Cold training."
+                    )
+
+        elif model_type in ('neural_network', 'cnn'):
+            # Check if layer 0 weights exist and match feature count
+            layer_0_key = 'layer_0_weights'
+            if layer_0_key in global_model:
+                w0 = np.array(global_model[layer_0_key])
+                if w0.shape[0] == n_features:
+                    # Reconstruct all layer weight matrices and bias vectors
+                    coefs, intercepts = [], []
+                    i = 0
+                    while f'layer_{i}_weights' in global_model:
+                        coefs.append(np.array(global_model[f'layer_{i}_weights']))
+                        intercepts.append(np.array(global_model[f'layer_{i}_bias']))
+                        i += 1
+                    if coefs:
+                        model.set_params(warm_start=True)
+                        model.coefs_ = coefs
+                        model.intercepts_ = intercepts
+                        model.n_iter_ = 0
+                        model.n_layers_ = len(coefs) + 1
+                        model.n_outputs_ = 1
+                        model.out_activation_ = 'logistic'
+                        logger.info(f"✅ Warm-start applied: MLP ({len(coefs)} layers)")
+                else:
+                    logger.warning(
+                        f"⚠️ Warm-start skipped: layer_0 shape {w0.shape} vs "
+                        f"current n_features={n_features}. Cold training."
+                    )
+
+        elif model_type == 'random_forest':
+            # Random Forest warm_start adds more trees on top of existing estimators.
+            # We can't restore individual tree structure from feature_importances,
+            # but enabling warm_start lets each round grow incrementally.
+            model.set_params(warm_start=True)
+            logger.info("✅ Warm-start applied: RandomForest set to additive mode")
+
+    except Exception as e:
+        logger.warning(f"⚠️ Warm-start initialization failed ({e}). Falling back to cold training.")
+
+    return model
+
+
 def train(input_data):
     disease = input_data.get("disease")
     if not disease:
@@ -161,7 +237,15 @@ def train(input_data):
         # Initialize model based on type
         model = create_model(model_type, config)
         logger.info(f"🧠 Using model: {model.__class__.__name__}")
-        
+
+        # Apply warm-start from previous global model if available
+        global_model = input_data.get('globalModel')
+        if global_model:
+            logger.info("🔄 Global model provided — attempting warm-start initialization...")
+            model = apply_warm_start(model, global_model, model_type, X_train.shape[1])
+        else:
+            logger.info("🆕 No global model provided — cold training from scratch.")
+
         # Train model
         model.fit(X_train, y_train)
         
