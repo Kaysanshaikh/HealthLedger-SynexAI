@@ -14,6 +14,28 @@ const DATA_SOURCE_OPTIONS = [
 
 const TRAINING_STEPS = ['Checking data', 'Loading libraries', 'Loading dataset', 'Training', 'Complete'];
 
+const parseBlockchainError = (err) => {
+    // 1. Check if backend provided a specialized error message first
+    if (err.response?.data?.error) {
+        const serverError = err.response.data.error;
+        if (serverError.includes('execution reverted:')) {
+            const match = serverError.match(/execution reverted: "([^"]+)"/) || serverError.match(/execution reverted: ([^,]+)/);
+            if (match && match[1]) return match[1].trim();
+        }
+        return serverError;
+    }
+
+    const errorMsg = err.message || '';
+    if (errorMsg.includes('Already submitted')) return 'This round already has a contribution from this participant.';
+    if (errorMsg.includes('insufficient funds')) return 'Insufficient funds in wallet for gas fees.';
+    if (errorMsg.includes('user rejected')) return 'Transaction was rejected in wallet.';
+    if (errorMsg.includes('execution reverted')) {
+        const match = errorMsg.match(/execution reverted: "([^"]+)"/) || errorMsg.match(/execution reverted: ([^,]+)/);
+        if (match && match[1]) return match[1].trim();
+    }
+    return errorMsg.length > 100 ? errorMsg.substring(0, 100) + '...' : errorMsg;
+};
+
 function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }) {
     const { user } = useAuth();
     const [dataSource, setDataSource] = useState('kaggle');
@@ -196,9 +218,9 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             if (onTrainingComplete) onTrainingComplete(metrics);
         } catch (err) {
             console.error('Training flow error:', err);
-            const msg = err.response?.data?.error || err.message || 'Training failed';
-            setTrainingError(msg);
-            alert("❌ Training Failed:\n\n" + msg);
+            const userFriendlyMsg = parseBlockchainError(err);
+            setTrainingError(userFriendlyMsg);
+            alert("❌ Training Failed\n\n" + userFriendlyMsg);
             setProgress({ status: 'failed', progress: 0, step: 'Training failed' });
         } finally {
             setTraining(false);

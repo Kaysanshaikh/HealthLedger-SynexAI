@@ -73,6 +73,9 @@ exports.login = async (req, res) => {
     }
 
     if (!userRow) {
+      if (normalizedRole === 'admin') {
+        return res.status(401).json({ error: "Please login with admin account" });
+      }
       return res.status(401).json({
         error: `No ${normalizedRole} account found for this wallet. Please register first.`
       });
