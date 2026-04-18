@@ -25,6 +25,26 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // --- EIP-6963 Multi-Provider Discovery ---
+  const [providers, setProviders] = useState([]);
+  const [selectedProvider, setSelectedProvider] = useState(null);
+
+  useEffect(() => {
+    const onAnnounceProvider = (event) => {
+      const { info, provider } = event.detail;
+      setProviders((prev) => {
+        if (prev.some(p => p.info.uuid === info.uuid)) return prev;
+        return [...prev, { info, provider }];
+      });
+    };
+    
+    window.addEventListener("eip6963:announceProvider", onAnnounceProvider);
+    window.dispatchEvent(new CustomEvent("eip6963:requestProvider"));
+
+    return () => window.removeEventListener("eip6963:announceProvider", onAnnounceProvider);
+  }, []);
+  // -----------------------------------------
+
   useEffect(() => {
     if (token) {
       localStorage.setItem(STORAGE_KEY_TOKEN, token);
@@ -131,13 +151,17 @@ export const AuthProvider = ({ children }) => {
         }
 
         // 1. Get accounts with timeout
-        console.log("📱 Requesting MetaMask accounts...");
+        console.log("📱 Requesting wallet accounts...");
         let accounts;
+        
+        // Use selected provider or fallback to window.ethereum
+        const targetProvider = selectedProvider?.provider || window.ethereum;
+        
         try {
           accounts = await timeout(
             30000, // 30 second timeout
-            window.ethereum.request({ method: "eth_requestAccounts" }),
-            "MetaMask connection timeout. Please unlock MetaMask and try again."
+            targetProvider.request({ method: "eth_requestAccounts" }),
+            "Wallet connection timeout. Please unlock your wallet and try again."
           );
         } catch (requestErr) {
           // If a request is already pending, we should handle it early
@@ -164,14 +188,14 @@ export const AuthProvider = ({ children }) => {
 
         // 2. Create message to sign
         message = `Welcome to HealthLedger SynexAI!\n\nSign this message to log in as a ${role}.\n\nWallet: ${walletAddress}`;
-        const web3 = new Web3(window.ethereum);
+        const web3 = new Web3(targetProvider);
 
         // 3. Sign message with timeout
-        console.log("✍️ Requesting signature from MetaMask...");
+        console.log("✍️ Requesting signature from wallet...");
         signature = await timeout(
           60000, // 60 second timeout for signing
           web3.eth.personal.sign(message, walletAddress, ''),
-          "Signature request timeout. Please check MetaMask and try again."
+          "Signature request timeout. Please check your wallet and try again."
         );
       }
       console.log("✅ Message signed successfully");
@@ -265,8 +289,11 @@ export const AuthProvider = ({ children }) => {
       error,
       clearError: () => setError(null),
       getWalletAddress,
+      providers,
+      selectedProvider,
+      selectProvider: setSelectedProvider
     }),
-    [token, user, loading, error, getWalletAddress, burnerWallet, generateBurnerWallet, clearBurnerWallet, login]
+    [token, user, loading, error, getWalletAddress, burnerWallet, generateBurnerWallet, clearBurnerWallet, login, providers, selectedProvider]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

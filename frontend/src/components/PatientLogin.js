@@ -7,10 +7,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import BurnerWalletManager from "./BurnerWalletManager";
+import WalletSelector from "./WalletSelector";
 
 const PatientLogin = () => {
   const navigate = useNavigate();
-  const { login, loading, error, clearError } = useAuth();
+  const { login, loading, error, clearError, providers, selectedProvider, selectProvider } = useAuth();
+
+  useEffect(() => {
+    if (providers.length > 0 && !selectedProvider) {
+      selectProvider(providers[0]);
+    }
+  }, [providers, selectedProvider, selectProvider]);
   const [hhNumber, sethhNumber] = useState("");
   const [validationError, setValidationError] = useState("");
 
@@ -59,6 +66,7 @@ const PatientLogin = () => {
             <CardDescription className="text-center">Enter your Health Hero Number to proceed</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <WalletSelector />
             <BurnerWalletManager />
             {error && (
               <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">

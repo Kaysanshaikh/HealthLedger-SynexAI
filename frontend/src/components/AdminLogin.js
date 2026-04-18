@@ -6,12 +6,20 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ShieldCheck, AlertCircle } from 'lucide-react';
 import BurnerWalletManager from "./BurnerWalletManager";
+import WalletSelector from "./WalletSelector";
 
 const AdminLogin = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, providers, selectedProvider, selectProvider } = useAuth();
+
+    // Auto-select first provider if available and none selected
+    React.useEffect(() => {
+        if (providers.length > 0 && !selectedProvider) {
+            selectProvider(providers[0]);
+        }
+    }, [providers, selectedProvider, selectProvider]);
 
     const handleLogin = async () => {
         setLoading(true);
@@ -42,6 +50,7 @@ const AdminLogin = () => {
                         <CardTitle className="text-2xl">Admin Login</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <WalletSelector />
                         <BurnerWalletManager />
                         <p className="text-center text-muted-foreground">
                             Connect your MetaMask wallet to access the Federated Learning Dashboard.
