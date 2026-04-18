@@ -69,14 +69,6 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             } catch (err) {
                 console.error('Failed to fetch dataset info:', err);
             } finally {
-                // Fetch Round Info (for timer)
-                try {
-                    const roundRes = await client.get(`${API_URL}/rounds/active/${disease}`); // Or use modelId if available
-                    // Note: endpoint we updated earlier is /rounds/active/:modelId
-                } catch (rErr) {}
-            } catch (err) {
-                console.error('Failed to fetch dataset info:', err);
-            } finally {
                 setLoadingInfo(false);
             }
         };
