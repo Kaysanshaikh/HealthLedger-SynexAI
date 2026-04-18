@@ -34,8 +34,11 @@ function FLDashboard() {
         }
     }, [notification]);
 
+    const showNotification = (type, title, message) => {
+        setNotification({ type, title, message });
         const icon = type === 'error' ? '❌' : '✅';
         alert(`${icon} ${title}\n\n${message}`);
+    };
 
     const parseBlockchainError = (err) => {
         // 1. Check if backend provided a specialized error message first
