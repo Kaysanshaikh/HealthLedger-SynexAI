@@ -235,7 +235,7 @@ const WalletSelector = () => {
           )}
 
           {/* Name */}
-          <span style={{ flex: 1, textAlign: 'left', fontWeight: '600', fontSize: '0.88rem', color: '#e0e0f0' }}>
+          <span style={{ flex: 1, textAlign: 'left', fontWeight: '600', fontSize: '0.88rem', color: 'var(--foreground, #111)' }}>
             {current ? current.info.name : 'Select a wallet…'}
           </span>
 

@@ -35,15 +35,11 @@ const BurnerWalletManager = () => {
                         </div>
                         <div>
                             <h3 className="font-bold text-orange-600 flex items-center gap-2">
-                                Testing Mode: Local Burner Wallet
+                                Local Burner Wallet
                             </h3>
-                            {burnerWallet ? (
+                            {burnerWallet && (
                                 <p className="text-sm font-mono text-muted-foreground mt-1">
                                     Active: {burnerWallet.address.substring(0, 12)}...{burnerWallet.address.substring(38)}
-                                </p>
-                            ) : (
-                                <p className="text-sm text-muted-foreground">
-                                    Use MetaMask, or generate a temporary wallet to test.
                                 </p>
                             )}
                         </div>
