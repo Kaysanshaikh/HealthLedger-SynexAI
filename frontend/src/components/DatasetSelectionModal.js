@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import client from '../api/client';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { X, Database, FileText, RefreshCw, Activity, CheckCircle, AlertCircle, Zap } from 'lucide-react';
+import { X, Database, FileText, RefreshCw, Activity, CheckCircle, AlertCircle, Zap, Clock, Timer } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = '/fl';
@@ -25,6 +25,15 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
     const [trainingResult, setTrainingResult] = useState(null);
     const [trainingError, setTrainingError] = useState(null);
     const [progress, setProgress] = useState({ status: null, progress: 0, step: '' });
+    const [activeRoundInfo, setActiveRoundInfo] = useState(null);
+
+    const formatTimeRemaining = (ms) => {
+        if (!ms || ms <= 0) return 'Expired';
+        const hours = Math.floor(ms / 3600000);
+        const mins = Math.floor((ms % 3600000) / 60000);
+        if (hours > 0) return `${hours}h ${mins}m left`;
+        return `${mins}m left`;
+    };
 
     // Fetch dataset info on mount
     useEffect(() => {
@@ -60,11 +69,38 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             } catch (err) {
                 console.error('Failed to fetch dataset info:', err);
             } finally {
+                // Fetch Round Info (for timer)
+                try {
+                    const roundRes = await client.get(`${API_URL}/rounds/active/${disease}`); // Or use modelId if available
+                    // Note: endpoint we updated earlier is /rounds/active/:modelId
+                } catch (rErr) {}
+            } catch (err) {
+                console.error('Failed to fetch dataset info:', err);
+            } finally {
                 setLoadingInfo(false);
             }
         };
         fetchDatasetInfo();
     }, [disease, user]);
+
+    // NEW EFFECT: Fetch round info separately to be more reliable
+    useEffect(() => {
+        const fetchRoundInfo = async () => {
+            if (!modelId) return;
+            try {
+                const res = await client.get(`${API_URL}/rounds/active/${modelId}`);
+                if (res.data.activeRound) {
+                    setActiveRoundInfo(res.data.activeRound);
+                }
+            } catch (err) {
+                console.warn('Could not fetch active round for timer:', err);
+            }
+        };
+        fetchRoundInfo();
+        // Refresh timer every minute while modal is open
+        const t = setInterval(fetchRoundInfo, 60000);
+        return () => clearInterval(t);
+    }, [modelId]);
 
     // Poll training status
     useEffect(() => {
@@ -201,7 +237,22 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
                             <Activity className="h-5 w-5 text-primary" />
                             Train Model: <span className="uppercase text-primary">{disease}</span>
                         </h3>
-                        <p className="text-sm text-muted-foreground">Select data source and configure training</p>
+                        <div className="flex items-center gap-3">
+                            {activeRoundInfo && (
+                                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                    activeRoundInfo.ms_remaining < 7200000 
+                                        ? 'bg-red-500/10 text-red-600 border-red-500/20 animate-pulse' 
+                                        : 'bg-primary/10 text-primary border-primary/20'
+                                }`}>
+                                    {activeRoundInfo.ms_remaining <= 0 ? (
+                                        <><AlertCircle className="h-3 w-3" /> EXPIRED</>
+                                    ) : (
+                                        <><Timer className="h-3 w-3" /> {formatTimeRemaining(activeRoundInfo.ms_remaining)}</>
+                                    )}
+                                </div>
+                            )}
+                            <p className="text-sm text-muted-foreground">Select data source and configure training</p>
+                        </div>
                     </div>
                     <Button variant="ghost" size="icon" className="rounded-full" onClick={onClose} disabled={training}>
                         <X className="h-5 w-5" />

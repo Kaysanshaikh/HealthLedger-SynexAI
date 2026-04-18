@@ -10,6 +10,7 @@ const registerRouter = require("./routes/register");
 const searchRouter = require("./routes/search");
 const profileRouter = require("./routes/profile");
 const flRouter = require("./routes/federatedLearning");
+const { startRoundTimeoutWatcher } = require("./services/roundTimeoutWatcher");
 
 const app = express();
 
@@ -57,4 +58,7 @@ app.listen(port, "0.0.0.0", () => {
   } else {
     console.log(`👉 API Base Path: http://localhost:${port}/api`);
   }
+
+  // Start background services
+  startRoundTimeoutWatcher();
 });

@@ -740,9 +740,18 @@ router.get("/rounds/active/:modelId", async (req, res) => {
             return res.json({ success: true, activeRound: null });
         }
 
+        const row = result.rows[0];
+        const now = Date.now();
+        const timeoutAt = row.timeout_at ? new Date(row.timeout_at).getTime() : null;
+        const msRemaining = timeoutAt ? Math.max(0, timeoutAt - now) : null;
+
         res.json({
             success: true,
-            activeRound: result.rows[0]
+            activeRound: {
+                ...row,
+                timeout_at: row.timeout_at,
+                ms_remaining: msRemaining
+            }
         });
 
     } catch (error) {
@@ -804,6 +813,10 @@ router.post("/rounds/complete", authMiddleware, async (req, res) => {
         }
 
         console.log(`📊 Completing round ${roundId} with ${round.currentParticipants} on-chain participant(s) (DB shows ${contributions.rows.length})`);
+
+        // Calculate average accuracy and loss from contributions (used for DB update below)
+        const avgAccuracy = contributions.rows.reduce((sum, c) => sum + parseFloat(c.local_accuracy || 0), 0) / contributions.rows.length;
+        const avgLoss = contributions.rows.reduce((sum, c) => sum + parseFloat(c.local_loss || 0), 0) / contributions.rows.length;
 
         // Build and upload a real aggregated model to IPFS
         // Download all participant model weights and run FedAvg to get a proper global model

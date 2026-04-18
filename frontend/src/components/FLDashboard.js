@@ -7,7 +7,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { useAuth } from '../context/AuthContext';
-import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Trash2, AlertCircle, CheckCircle2, X, BarChart2, LineChart as LineChartIcon, Maximize2 } from 'lucide-react';
+import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Trash2, AlertCircle, CheckCircle2, X, BarChart2, LineChart as LineChartIcon, Maximize2, Clock, Timer } from 'lucide-react';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const API_URL = '/fl';
@@ -68,6 +68,14 @@ function FLDashboard() {
     };
     const [trainingModels, setTrainingModels] = useState({});
     const [activeRounds, setActiveRounds] = useState({});
+
+    const formatTimeRemaining = (ms) => {
+        if (!ms || ms <= 0) return 'Expired';
+        const hours = Math.floor(ms / 3600000);
+        const mins = Math.floor((ms % 3600000) / 60000);
+        if (hours > 0) return `${hours}h ${mins}m left`;
+        return `${mins}m left`;
+    };
     const [selectedModelForMetrics, setSelectedModelForMetrics] = useState(null);
     const [modelMetrics, setModelMetrics] = useState([]);
     const [metricsLoading, setMetricsLoading] = useState(false);
@@ -600,14 +608,29 @@ function FLDashboard() {
                                                         View Performance
                                                     </Button>
 
-                                                    <div className="flex items-center justify-between px-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Live Round {activeRounds[model.model_id].round_number}</span>
+                                                    <div className="flex flex-col gap-2 px-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Live Round {activeRounds[model.model_id].round_number}</span>
+                                                            </div>
+                                                            <span className="text-[9px] font-mono opacity-50">
+                                                                ID:{activeRounds[model.model_id].round_id}
+                                                            </span>
                                                         </div>
-                                                        <span className="text-[9px] font-mono opacity-50">
-                                                            ID:{activeRounds[model.model_id].round_id}
-                                                        </span>
+                                                        
+                                                        {/* Live Countdown Timer */}
+                                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold border ${
+                                                            activeRounds[model.model_id].ms_remaining < 7200000 // 2 hours
+                                                                ? 'bg-destructive/10 text-destructive border-destructive/20 animate-pulse'
+                                                                : 'bg-muted/50 text-muted-foreground border-border/50'
+                                                        }`}>
+                                                            {activeRounds[model.model_id].ms_remaining <= 0 ? (
+                                                                <><AlertCircle className="h-3 w-3" /> ROUND EXPIRED</>
+                                                            ) : (
+                                                                <><Timer className="h-3 w-3" /> {formatTimeRemaining(activeRounds[model.model_id].ms_remaining)}</>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <Button
