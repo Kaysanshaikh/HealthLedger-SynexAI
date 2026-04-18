@@ -167,8 +167,9 @@ export const AuthProvider = ({ children }) => {
         } catch (requestErr) {
           // If a request is already pending, we should handle it early
           if (requestErr.code === -32002) {
-              toast.warning("A wallet request is already pending. Please click the wallet extension icon to approve it!");
-            throw new Error(msg);
+            const pendingMsg = "A wallet request is already pending. Please click the wallet extension icon to approve it!";
+            toast.warning(pendingMsg);
+            throw new Error(pendingMsg);
           }
           throw requestErr;
         }
