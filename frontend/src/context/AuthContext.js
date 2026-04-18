@@ -226,7 +226,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [burnerWallet]);
+  }, [burnerWallet, selectedProvider]);
 
   const logout = () => {
     setToken(null);
