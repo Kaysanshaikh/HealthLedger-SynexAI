@@ -203,11 +203,11 @@ const FLManager = () => {
                 pollForModel();
             } else {
                 await fetchModels();
-                showNotification('success', '✅ Success!', 'Model created successfully.');
+                showNotification('success', 'Success!', 'Model created successfully.');
             }
         } catch (err) {
             console.error('Failed to create model:', err);
-            showNotification('error', '❌ Loading Failed', parseBlockchainError(err));
+            showNotification('error', 'Loading Failed', parseBlockchainError(err));
         } finally {
             setLoading(false);
         }
@@ -222,7 +222,7 @@ const FLManager = () => {
                 walletAddress: user.walletAddress,
                 institutionName
             });
-            showNotification('success', '✅ Registered!', 'You are now a registered Federated Learning participant.');
+            showNotification('success', 'Registered!', 'You are now a registered Federated Learning participant.');
             setIsParticipant(true);
             await fetchModels();
         } catch (err) {
@@ -242,10 +242,14 @@ const FLManager = () => {
     };
 
     const handleCompleteRound = async (roundId) => {
+        if (user?.role !== 'admin') {
+            alert("❌ Access Denied\n\nPlease login with admin wallet account");
+            return;
+        }
         try {
             setLoading(true);
             await client.post(`${API_URL}/rounds/complete`, { roundId });
-            showNotification('success', '✅ Success!', `Round ${roundId} completed and aggregated successfully!`);
+            showNotification('success', 'Success!', `Round ${roundId} completed and aggregated successfully!`);
             await fetchModels();
         } catch (err) {
             console.error('Failed to complete round:', err);
@@ -267,11 +271,11 @@ const FLManager = () => {
             const res = await client.delete(`${API_URL}/models/${modelId}`);
             
             if (res.data.async) {
-                showNotification('success', '⏳ Processing', res.data.message || "Model deletion processing.");
+                showNotification('success', 'Processing', res.data.message || "Model deletion processing.");
                 // Sync after a while to make sure everything is consistent
                 setTimeout(() => fetchModels(), 10000);
             } else {
-                showNotification('success', '✅ Success!', "Model deleted successfully.");
+                showNotification('success', 'Success!', "Model deleted successfully.");
             }
         } catch (err) {
             console.error('Failed to delete model:', err);

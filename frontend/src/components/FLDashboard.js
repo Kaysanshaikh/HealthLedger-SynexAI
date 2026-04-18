@@ -34,12 +34,8 @@ function FLDashboard() {
         }
     }, [notification]);
 
-    const showNotification = (type, title, message) => {
-        setNotification({ type, title, message });
-        // Fulfilling user request: Every notification should also be a popup
         const icon = type === 'error' ? '❌' : '✅';
         alert(`${icon} ${title}\n\n${message}`);
-    };
 
     const parseBlockchainError = (err) => {
         // 1. Check if backend provided a specialized error message first
@@ -264,7 +260,7 @@ function FLDashboard() {
                 pollForModel();
             } else {
                 await fetchModels();
-                showNotification('success', '✅ Success!', 'Model created successfully.');
+                showNotification('success', 'Success!', 'Model created successfully.');
             }
         } catch (err) {
             console.error('Failed to create model:', err);
@@ -275,6 +271,10 @@ function FLDashboard() {
     };
 
     const handleInitiateRound = async (modelId) => {
+        if (user?.role !== 'admin') {
+            alert("❌ Access Denied\n\nPlease login with admin wallet account");
+            return;
+        }
         try {
             setTrainingModels(prev => ({ ...prev, [modelId]: true }));
             console.log(`🚀 Initiating training round for model ${modelId}`);
@@ -284,7 +284,7 @@ function FLDashboard() {
             const roundId = startRes.data.roundId;
 
             console.log(`✅ Round ${roundId} initiated successfully`);
-            showNotification('success', '✅ Success!', `Round ID ${roundId} successfully initiated!`);
+            showNotification('success', 'Success!', `Round ID ${roundId} successfully initiated!`);
 
             await fetchModels(); // This will also refresh active rounds
         } catch (err) {
@@ -296,6 +296,10 @@ function FLDashboard() {
     };
 
     const handleCompleteRound = async (modelId, roundId, roundNumber) => {
+        if (user?.role !== 'admin') {
+            alert("❌ Access Denied\n\nPlease login with admin wallet account");
+            return;
+        }
         if (!window.confirm(`Are you sure you want to complete Round ID ${roundId} (Model Round ${roundNumber})?\n\nThis will finalize the round and aggregate all contributions.`)) {
             return;
         }

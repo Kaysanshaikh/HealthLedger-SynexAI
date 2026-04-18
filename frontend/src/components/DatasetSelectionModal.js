@@ -199,7 +199,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             setTrainingResult(metrics);
             setProgress({ status: 'completed', progress: 100, step: 'Training complete' });
             
-            alert(`✅ Training Complete!\n\nAccuracy: ${(metrics.accuracy * 100).toFixed(1)}%\nSamples: ${metrics.samplesTrained}\n\nYour contribution has been verified and submitted to the blockchain!`);
+            alert(`Training Complete!\n\nAccuracy: ${(metrics.accuracy * 100).toFixed(1)}%\nSamples: ${metrics.samplesTrained}\n\nYour contribution has been verified and submitted to the blockchain!`);
 
             if (onTrainingComplete) onTrainingComplete(metrics);
         } catch (err) {
