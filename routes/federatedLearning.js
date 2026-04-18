@@ -483,6 +483,36 @@ router.post("/rounds/submit", authMiddleware, async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
+        // ─── PRE-FLIGHT TIMEOUT CHECK ────────────────────────────────────────────
+        // Check if the round's deadline has passed BEFORE doing any expensive work
+        // (ZK proof generation, IPFS upload). The smart contract will reject with
+        // "Round timeout exceeded" if we skip this check — wasting 30-60s of work.
+        const roundRow = await db.query(
+            `SELECT timeout_at, status FROM fl_rounds WHERE round_id = $1`,
+            [roundId]
+        );
+        if (roundRow.rows.length > 0) {
+            const { timeout_at, status } = roundRow.rows[0];
+            const nowMs = Date.now();
+            const timeoutMs = new Date(timeout_at).getTime();
+
+            if (status === 'completed' || status === 'failed') {
+                return res.status(400).json({
+                    error: `Round ${roundId} is already ${status}. Please start a new round.`
+                });
+            }
+
+            if (timeout_at && nowMs > timeoutMs) {
+                const expiredAgo = Math.round((nowMs - timeoutMs) / 60000);
+                return res.status(400).json({
+                    error: `Round ${roundId} timed out ${expiredAgo} minute(s) ago (expired at ${new Date(timeout_at).toLocaleString()}). ` +
+                           `Please ask the admin to start a new round.`,
+                    code: 'ROUND_TIMEOUT'
+                });
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
         // Validate modelWeights structure
         if (typeof modelWeights !== 'object' || Array.isArray(modelWeights)) {
             return res.status(400).json({ error: "Invalid modelWeights format. Expected an object." });
