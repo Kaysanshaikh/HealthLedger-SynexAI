@@ -1,5 +1,5 @@
 {
-  "name": "final-project4",
+  "name": "healthledger-synexai-frontend",
   "version": "0.1.0",
   "proxy": "http://localhost:5001",
   "private": true,
