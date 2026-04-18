@@ -11,7 +11,7 @@ import WalletSelector from "./WalletSelector";
 
 const PatientLogin = () => {
   const navigate = useNavigate();
-  const { login, loading, error, clearError, providers, selectedProvider, selectProvider } = useAuth();
+  const { login, loading, error, clearError, providers, selectedProvider, selectProvider, isUsingBurnerWallet, burnerWalletHHNumber } = useAuth();
 
   useEffect(() => {
     if (providers.length > 0 && !selectedProvider) {
@@ -20,6 +20,13 @@ const PatientLogin = () => {
   }, [providers, selectedProvider, selectProvider]);
   const [hhNumber, sethhNumber] = useState("");
   const [validationError, setValidationError] = useState("");
+
+  // Auto-fill HH number for returning burner wallet users
+  useEffect(() => {
+    if (isUsingBurnerWallet && burnerWalletHHNumber) {
+      sethhNumber(burnerWalletHHNumber);
+    }
+  }, [isUsingBurnerWallet, burnerWalletHHNumber]);
 
   useEffect(() => {
     return () => clearError();
@@ -89,6 +96,16 @@ const PatientLogin = () => {
               {validationError && (
                 <p className="text-xs font-medium text-destructive mt-1 animate-in fade-in slide-in-from-top-1">
                   {validationError}
+                </p>
+              )}
+              {isUsingBurnerWallet && burnerWalletHHNumber && (
+                <p className="text-xs text-orange-500 mt-1">
+                  🔥 Auto-filled from your active burner wallet session.
+                </p>
+              )}
+              {isUsingBurnerWallet && !burnerWalletHHNumber && (
+                <p className="text-xs text-orange-400 mt-1">
+                  🔥 Burner wallet active — enter the HH Number you registered this wallet with.
                 </p>
               )}
             </div>

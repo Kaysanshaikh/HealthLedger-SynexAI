@@ -281,6 +281,9 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated: Boolean(token && user),
       burnerWallet,
       isUsingBurnerWallet: Boolean(burnerWallet),
+      // If the burner wallet is active and the user has logged in before,
+      // expose their registered HH so login forms can pre-fill it.
+      burnerWalletHHNumber: burnerWallet && user ? String(user.hhNumber) : null,
       generateBurnerWallet,
       clearBurnerWallet,
       login,
