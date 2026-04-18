@@ -10,6 +10,7 @@ import { Label } from "./ui/label";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { AlertTriangle } from "lucide-react";
 import BurnerWalletManager from "./BurnerWalletManager";
+import { useToast } from "../context/ToastContext";
 
 // Phone number validation for multiple countries
 const isValidPhoneNumber = (phone) => {
@@ -40,6 +41,7 @@ const isValidPhoneNumber = (phone) => {
 const DiagnosticRegistry = () => {
   const navigate = useNavigate();
   const { getWalletAddress, burnerWallet } = useAuth();
+  const { show: showToast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -121,7 +123,7 @@ const DiagnosticRegistry = () => {
       setFieldErrors(validationErrors);
       const msg = Object.values(validationErrors).join(', ');
       setError(msg);
-      alert("⚠️ Validation Error:\n\n" + msg);
+      showToast(msg, 'warning');
       setLoading(false);
       return;
     }
@@ -132,13 +134,13 @@ const DiagnosticRegistry = () => {
     try {
       const response = await client.post("/register/diagnostic", formData);
       console.log("Registration successful:", response.data);
-      alert("✅ Diagnostic Center registered successfully!");
+      showToast('Diagnostic Center registered successfully!', 'success');
       navigate("/login");
     } catch (err) {
       console.error("Registration error:", err);
       const errorMessage = err.response?.data?.error || err.message || "Failed to register diagnostic center";
       setError(errorMessage);
-      alert("❌ Registration Error:\n\n" + errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }

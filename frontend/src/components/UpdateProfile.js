@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
 import NavBarLogout from "./NavBarLogout";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -10,10 +9,12 @@ import { Textarea } from "./ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { User, AlertTriangle, CheckCircle, ArrowLeft } from 'lucide-react';
 import client from "../api/client";
+import { useToast } from "../context/ToastContext";
 
 const UpdateProfile = () => {
   const { hhNumber } = useParams();
   const navigate = useNavigate();
+  const { show: showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -101,7 +102,7 @@ const UpdateProfile = () => {
       setFieldErrors(validationErrors);
       const msg = Object.values(validationErrors).join(', ');
       setError(msg);
-      alert("⚠️ Validation Error:\n\n" + msg);
+      showToast(msg, 'warning');
       setSaving(false);
       return;
     }
@@ -110,7 +111,7 @@ const UpdateProfile = () => {
     try {
       await client.put(`/profile/patient/${hhNumber}`, formData);
       setSuccess("Profile updated successfully!");
-      alert("✅ Profile updated successfully!");
+      showToast('Profile updated successfully!', 'success');
 
       // Redirect to profile view After 1 second (faster now because of alert)
       setTimeout(() => {
@@ -120,7 +121,7 @@ const UpdateProfile = () => {
       console.error("Failed to update profile:", err);
       const msg = err.response?.data?.error || "Failed to update profile. Please try again.";
       setError(msg);
-      alert("❌ Update Error:\n\n" + msg);
+      showToast(msg, 'error');
     } finally {
       setSaving(false);
     }

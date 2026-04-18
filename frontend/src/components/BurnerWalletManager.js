@@ -4,19 +4,21 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Flame, Trash2, Key } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { useToast } from '../context/ToastContext';
 
 const BurnerWalletManager = () => {
     const { burnerWallet, generateBurnerWallet, clearBurnerWallet } = useAuth();
+    const { show: showToast } = useToast();
     
     const handleGenerate = () => {
         const wallet = generateBurnerWallet();
-        alert("🔥 Burner Wallet Generated!\n\nAddress: " + wallet.address + "\n\nAll actions will now use this local wallet until you clear it.");
+        showToast(`Burner wallet generated! Address: ${wallet.address.substring(0,10)}...${wallet.address.substring(38)}`, 'success');
     };
 
     const handleClear = () => {
         if (window.confirm("Are you sure you want to clear the burner wallet? You will need to use MetaMask for future actions.")) {
             clearBurnerWallet();
-            alert("🗑️ Burner Wallet cleared. MetaMask is now the default provider.");
+            showToast('Burner wallet cleared. MetaMask is now the default provider.', 'info');
         }
     };
 

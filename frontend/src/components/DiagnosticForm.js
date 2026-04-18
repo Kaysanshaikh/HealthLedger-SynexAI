@@ -9,6 +9,7 @@ import { Textarea } from "./ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { FileText, AlertTriangle, CheckCircle, ArrowLeft, Upload, File, X, Plus, Trash2, Activity, Info } from 'lucide-react';
 import client from "../api/client";
+import { useToast } from "../context/ToastContext";
 
 // Disease-specific metric presets for structured health data entry
 const METRIC_PRESETS = {
@@ -80,6 +81,7 @@ const TEST_TYPE_OPTIONS = [
 function DiagnosticForm() {
   const { hhNumber } = useParams();
   const navigate = useNavigate();
+  const { show: showToast } = useToast();
   const [formData, setFormData] = useState({
     patientHHNumber: "",
     testName: "",
@@ -140,7 +142,7 @@ function DiagnosticForm() {
       const msg = "You can upload a maximum of 5 files at once";
       setError(msg);
       setFieldErrors(prev => ({ ...prev, fileUpload: msg }));
-      alert("⚠️ " + msg);
+      showToast(msg, 'warning');
       return;
     }
 
@@ -157,7 +159,7 @@ function DiagnosticForm() {
         const msg = `File "${file.name}" exceeds 1MB limit`;
         setError(msg);
         setFieldErrors(prev => ({ ...prev, fileUpload: msg }));
-        alert("⚠️ " + msg);
+        showToast(msg, 'warning');
         setFiles([]);
         return;
       }
@@ -165,7 +167,7 @@ function DiagnosticForm() {
         const msg = `File "${file.name}" has invalid type. Only PDF, DOC, DOCX, JPG, and PNG are allowed.`;
         setError(msg);
         setFieldErrors(prev => ({ ...prev, fileUpload: msg }));
-        alert("⚠️ " + msg);
+        showToast(msg, 'warning');
         setFiles([]);
         return;
       }
@@ -192,13 +194,13 @@ function DiagnosticForm() {
     if (files.length === 0) {
       const msg = "Please select at least one file to upload";
       setError(msg);
-      alert("⚠️ " + msg);
+      showToast(msg, 'warning');
       return [];
     }
     if (!formData.patientHHNumber) {
       const msg = "Please enter Patient HH Number before uploading files";
       setError(msg);
-      alert("⚠️ " + msg);
+      showToast(msg, 'warning');
       return [];
     }
 
@@ -239,7 +241,7 @@ function DiagnosticForm() {
         errorMessage = "Cannot connect to server. Please make sure the backend server is running.";
       }
       setError(errorMessage);
-      alert("❌ Upload Error:\n\n" + errorMessage);
+      showToast(errorMessage, 'error');
       return [];
     } finally {
       setUploading(false);
@@ -261,7 +263,7 @@ function DiagnosticForm() {
       setFieldErrors(vErrors);
       const msg = Object.values(vErrors).join(', ');
       setError(msg);
-      alert("⚠️ Validation Error:\n\n" + msg);
+      showToast(msg, 'warning');
       setLoading(false);
       return;
     }
@@ -304,7 +306,7 @@ function DiagnosticForm() {
         successMsg += ` ${validMetrics.length} health metric(s) saved for ML training.`;
       }
       setSuccess(successMsg);
-      alert("✅ " + successMsg);
+      showToast(successMsg, 'success');
 
       // Reset form
       setFormData({ patientHHNumber: "", testName: "", testType: "", results: "", notes: "" });
@@ -317,7 +319,7 @@ function DiagnosticForm() {
     } catch (err) {
       const msg = err.response?.data?.error || "Failed to create diagnostic report. Please try again.";
       setError(msg);
-      alert("❌ Submission Error:\n\n" + msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }

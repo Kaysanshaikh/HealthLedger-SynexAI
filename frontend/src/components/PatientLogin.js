@@ -8,10 +8,12 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import BurnerWalletManager from "./BurnerWalletManager";
 import WalletSelector from "./WalletSelector";
+import { useToast } from "../context/ToastContext";
 
 const PatientLogin = () => {
   const navigate = useNavigate();
   const { login, loading, error, clearError, providers, selectedProvider, selectProvider, isUsingBurnerWallet, burnerWalletHHNumber } = useAuth();
+  const { show: showToast } = useToast();
 
   useEffect(() => {
     if (providers.length > 0 && !selectedProvider) {
@@ -47,7 +49,7 @@ const PatientLogin = () => {
     if (validationError || !hhNumber) {
       const msg = "Please enter a valid 6-digit HH Number.";
       setValidationError(msg);
-      alert("⚠️ Validation Error:\n\n" + msg);
+      showToast(msg, 'warning');
       return;
     }
 

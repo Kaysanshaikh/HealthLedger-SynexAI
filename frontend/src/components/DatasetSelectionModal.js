@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { X, Database, FileText, RefreshCw, Activity, CheckCircle, AlertCircle, Zap, Timer } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { toast } from '../context/ToastContext';
 
 const API_URL = '/fl';
 
@@ -154,7 +155,7 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
             if (!activeRound) {
                 const msg = 'No active training round. Please initiate a round first.';
                 setTrainingError(msg);
-                alert("⚠️ Training Rejected:\n\n" + msg);
+                toast.warning(msg);
                 setTraining(false);
                 return;
             }
@@ -212,15 +213,14 @@ function DatasetSelectionModal({ modelId, disease, onClose, onTrainingComplete }
 
             setTrainingResult(metrics);
             setProgress({ status: 'completed', progress: 100, step: 'Training complete' });
-            
-            alert(`Training Complete!\n\nAccuracy: ${(metrics.accuracy * 100).toFixed(1)}%\nSamples: ${metrics.samplesTrained}\n\nYour contribution has been verified and submitted to the blockchain!`);
+            toast.success(`Training complete! Accuracy: ${(metrics.accuracy * 100).toFixed(1)}% — contribution submitted to blockchain.`);
 
             if (onTrainingComplete) onTrainingComplete(metrics);
         } catch (err) {
             console.error('Training flow error:', err);
             const userFriendlyMsg = parseBlockchainError(err);
             setTrainingError(userFriendlyMsg);
-            alert("❌ Training Failed\n\n" + userFriendlyMsg);
+            toast.error(userFriendlyMsg);
             setProgress({ status: 'failed', progress: 0, step: 'Training failed' });
         } finally {
             setTraining(false);

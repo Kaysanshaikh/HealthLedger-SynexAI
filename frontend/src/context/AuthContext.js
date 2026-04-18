@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState, useCall
 import Web3 from "web3";
 import { ethers } from "ethers";
 import client from "../api/client";
+import { toast } from "./ToastContext";
 
 const STORAGE_KEY_TOKEN = "hl_token";
 const STORAGE_KEY_USER = "hl_user";
@@ -166,8 +167,7 @@ export const AuthProvider = ({ children }) => {
         } catch (requestErr) {
           // If a request is already pending, we should handle it early
           if (requestErr.code === -32002) {
-            const msg = "🛡️ A MetaMask request is already pending. Please click the fox icon in your browser to approve it!";
-            alert(msg);
+              toast.warning("A wallet request is already pending. Please click the wallet extension icon to approve it!");
             throw new Error(msg);
           }
           throw requestErr;
@@ -221,7 +221,7 @@ export const AuthProvider = ({ children }) => {
 
       setError(userMessage);
       // Production grade check: Bring the error to the user's immediate attention via alert
-      alert(userMessage);
+      toast.error(userMessage);
       throw new Error(userMessage);
     } finally {
       setLoading(false);

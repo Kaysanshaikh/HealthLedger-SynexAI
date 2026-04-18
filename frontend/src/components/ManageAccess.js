@@ -8,10 +8,12 @@ import { Label } from "./ui/label";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Shield, AlertTriangle, CheckCircle, UserCheck, ArrowLeft } from 'lucide-react';
 import client from "../api/client";
+import { useToast } from "../context/ToastContext";
 
 const ManageAccess = () => {
   const { hhNumber } = useParams();
   const navigate = useNavigate();
+  const { show: showToast } = useToast();
   const [doctorHHNumber, setDoctorHHNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -53,9 +55,7 @@ const ManageAccess = () => {
     try {
       console.log("🔐 Granting access to doctor HH:", doctorHHNumber);
       await client.post(`/records/patient/${hhNumber}/grant`, { doctorHHNumber });
-      const msg = `✅ Access granted successfully to Doctor (HH: ${doctorHHNumber})!`;
-      setSuccess(msg);
-      alert(msg);
+      showToast(`Access granted to Doctor (HH: ${doctorHHNumber})`, 'success');
       setDoctorHHNumber("");
       setError("");
       fetchGrantedDoctors();
@@ -63,7 +63,7 @@ const ManageAccess = () => {
       console.error("❌ Failed to grant access:", err);
       const msg = err.response?.data?.error || "Failed to grant access. Please try again.";
       setError(msg);
-      alert("❌ Grant Access Error:\n\n" + msg);
+      showToast(msg, 'error');
       setSuccess("");
     } finally {
       setLoading(false);
@@ -86,16 +86,14 @@ const ManageAccess = () => {
     try {
       console.log("🚫 Revoking access from doctor HH:", doctorHHNumber);
       await client.post(`/records/patient/${hhNumber}/revoke`, { doctorHHNumber });
-      const msg = `✅ Access revoked successfully from Doctor (HH: ${doctorHHNumber})!`;
-      setSuccess(msg);
-      alert(msg);
+      showToast(`Access revoked from Doctor (HH: ${doctorHHNumber})`, 'success');
       setDoctorHHNumber("");
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to revoke access:", err);
       const msg = err.response?.data?.error || "Failed to revoke access. Please try again.";
       setError(msg);
-      alert("❌ Revoke Access Error:\n\n" + msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -109,15 +107,13 @@ const ManageAccess = () => {
     try {
       setError("");
       await client.post(`/records/patient/${hhNumber}/revoke`, { doctorHHNumber: doctorHH });
-      const msg = `✅ Access revoked successfully from Doctor (HH: ${doctorHH})!`;
-      setSuccess(msg);
-      alert(msg);
+      showToast(`Access revoked from Doctor (HH: ${doctorHH})`, 'success');
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to revoke access:", err);
       const msg = err.response?.data?.error || "Failed to revoke access. Please try again.";
       setError(msg);
-      alert("❌ Revoke Access Error:\n\n" + msg);
+      showToast(msg, 'error');
       setSuccess("");
     }
   };
@@ -126,15 +122,13 @@ const ManageAccess = () => {
     try {
       setError("");
       await client.post(`/records/patient/${hhNumber}/grant`, { doctorHHNumber: doctorHH });
-      const msg = `✅ Access re-granted successfully to Doctor (HH: ${doctorHH})!`;
-      setSuccess(msg);
-      alert(msg);
+      showToast(`Access re-granted to Doctor (HH: ${doctorHH})`, 'success');
       fetchGrantedDoctors();
     } catch (err) {
       console.error("❌ Failed to grant access:", err);
       const msg = err.response?.data?.error || "Failed to grant access. Please try again.";
       setError(msg);
-      alert("❌ Grant Access Error:\n\n" + msg);
+      showToast(msg, 'error');
       setSuccess("");
     }
   };

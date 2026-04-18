@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Zap, X, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import DatasetSelectionModal from './DatasetSelectionModal';
+import { toast } from '../context/ToastContext';
 
 const API_URL = '/fl';
 
@@ -52,9 +53,9 @@ const FLManager = () => {
 
     const showNotification = (type, title, message) => {
         setNotification({ type, title, message });
-        // Fulfilling user request: Every notification should also be a popup
-        const icon = type === 'error' ? '❌' : '✅';
-        alert(`${icon} ${title}\n\n${message}`);
+        if (type === 'error') toast.error(message);
+        else if (type === 'success') toast.success(message);
+        else toast.info(message);
     };
 
     const parseBlockchainError = (err) => {
@@ -174,7 +175,6 @@ const FLManager = () => {
             
             if (res.data.async) {
                 showNotification('success', '⏳ Processing', res.data.message || 'Transaction submitted to blockchain. It will appear shortly.');
-                // Note: showNotification already calls alert() now
                 
                 // Optimistic UI: Add a placeholder model... (logic continues)
                 const tempModel = {
@@ -243,7 +243,7 @@ const FLManager = () => {
 
     const handleCompleteRound = async (roundId) => {
         if (user?.role !== 'admin') {
-            alert("❌ Access Denied\n\nPlease login with admin wallet account");
+            toast.error('Access denied. Please login with the admin wallet account.');
             return;
         }
         try {

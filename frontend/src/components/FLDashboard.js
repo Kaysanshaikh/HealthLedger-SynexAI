@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-
 import client from '../api/client';
 import NavBarLogout from './NavBarLogout';
 import DatasetSelectionModal from './DatasetSelectionModal';
@@ -9,6 +8,7 @@ import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { useAuth } from '../context/AuthContext';
 import { Brain, Users, TrendingUp, Shield, Plus, Minus, RefreshCw, Activity, Trash2, AlertCircle, CheckCircle2, X, BarChart2, Maximize2, Timer } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { toast } from '../context/ToastContext';
 
 const API_URL = '/fl';
 
@@ -36,8 +36,9 @@ function FLDashboard() {
 
     const showNotification = (type, title, message) => {
         setNotification({ type, title, message });
-        const icon = type === 'error' ? '❌' : '✅';
-        alert(`${icon} ${title}\n\n${message}`);
+        if (type === 'error') toast.error(message);
+        else if (type === 'success') toast.success(message);
+        else toast.info(message);
     };
 
     const parseBlockchainError = (err) => {
@@ -275,7 +276,7 @@ function FLDashboard() {
 
     const handleInitiateRound = async (modelId) => {
         if (user?.role !== 'admin') {
-            alert("❌ Access Denied\n\nPlease login with admin wallet account");
+            toast.error('Access denied. Please login with the admin wallet account.');
             return;
         }
         try {
@@ -300,7 +301,7 @@ function FLDashboard() {
 
     const handleCompleteRound = async (modelId, roundId, roundNumber) => {
         if (user?.role !== 'admin') {
-            alert("❌ Access Denied\n\nPlease login with admin wallet account");
+            toast.error('Access denied. Please login with the admin wallet account.');
             return;
         }
         if (!window.confirm(`Are you sure you want to complete Round ID ${roundId} (Model Round ${roundNumber})?\n\nThis will finalize the round and aggregate all contributions.`)) {

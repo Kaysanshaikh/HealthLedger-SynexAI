@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { AlertTriangle } from "lucide-react";
 import BurnerWalletManager from "./BurnerWalletManager";
+import { useToast } from "../context/ToastContext";
 
 // Phone number validation for multiple countries
 const isValidPhoneNumber = (phone) => {
@@ -41,6 +42,7 @@ const isValidPhoneNumber = (phone) => {
 const PatientRegistry = () => {
   const navigate = useNavigate();
   const { getWalletAddress, burnerWallet } = useAuth();
+  const { show: showToast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     dob: "",
@@ -142,7 +144,7 @@ const PatientRegistry = () => {
       setFieldErrors(validationErrors);
       const msg = Object.values(validationErrors).join(', ');
       setError(msg);
-      alert("⚠️ Validation Error:\n\n" + msg);
+      showToast(msg, 'warning');
       setLoading(false);
       return;
     }
@@ -153,7 +155,7 @@ const PatientRegistry = () => {
     try {
       const response = await client.post("/register/patient", formData);
       console.log("Registration successful:", response.data);
-      alert("✅ Patient registered successfully!");
+      showToast('Patient registered successfully!', 'success');
       navigate("/login");
     } catch (err) {
       console.error("Registration error:", err);
@@ -169,7 +171,7 @@ const PatientRegistry = () => {
       }
       
       setError(errorMessage);
-      alert("❌ Registration Error:\n\n" + errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
