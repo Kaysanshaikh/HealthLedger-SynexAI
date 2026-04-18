@@ -9,7 +9,7 @@
  * Does NOT auto-start the next round — that remains a deliberate admin action.
  */
 
-const db = require('../database/db');
+const db = require('./databaseService');
 
 const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const WARN_AHEAD_MS     = 2 * 60 * 60 * 1000; // Warn admin 2 hours before expiry
